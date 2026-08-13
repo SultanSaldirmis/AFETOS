@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Yönetim Paneli{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Yönetim Paneli</h2>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label class="form-label small text-muted mb-1">Duruma göre filtrele</label>
+        <select name="durum" class="form-select" onchange="this.form.submit()">
+            <option value="">Tümü</option>
+            {% for deger, etiket in durum_secenekleri %}
+            <option value="{{ deger }}" {% if deger == secili_durum %}selected{% endif %}>{{ etiket }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</form>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Öncelik</th>
+                    <th>Güven</th>
+                    <th>İhbar Sayısı</th>
+                    <th>Durum</th>
+                    <th>Ekip Ata</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kume in kumeler %}
+                    {% include "dashboard/_kume_satiri.html" %}
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Kayıt bulunamadı.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

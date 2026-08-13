@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Ekipler{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Ekipler</h2>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Ad</th>
+                    <th>Tür</th>
+                    <th>Konum</th>
+                    <th>Durum</th>
+                    <th>Aktif Görev (Olay Kümesi)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ekip in ekipler %}
+                <tr>
+                    <td>{{ ekip.ad }}</td>
+                    <td>{{ ekip.get_tur_display }}</td>
+                    <td class="text-muted small">{{ ekip.lat }}, {{ ekip.lng }}</td>
+                    <td>
+                        {% if ekip.durum == 'bosta' %}
+                        <span class="badge text-bg-success">Boşta</span>
+                        {% elif ekip.durum == 'yolda' %}
+                        <span class="badge text-bg-warning">Yolda</span>
+                        {% else %}
+                        <span class="badge text-bg-secondary">Görevde</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if ekip.mevcut_olay_kumesi %}
+                        <a href="{% url 'olaylar:harita' %}">Olay Kümesi #{{ ekip.mevcut_olay_kumesi.id }}</a>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">Henüz kayıtlı ekip yok.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<p class="text-muted small mt-2">Bu sayfada canlı güncelleme yok; gerekirse sayfayı yenileyin.</p>
+{% endblock %}

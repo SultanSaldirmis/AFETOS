@@ -1,0 +1,37 @@
+{% comment %}
+htmx ile durum güncelleme / ekip atama sonrası bu satırın kendisi yeniden
+render edilip DOM'da değiştirilir (sayfa yenilenmez).
+{% endcomment %}
+<tr id="kume-satiri-{{ kume.id }}">
+    <td>#{{ kume.id }}</td>
+    <td><span class="badge text-bg-{{ kume.oncelik_renk }} skor-badge">{{ kume.oncelik_skoru }}</span></td>
+    <td><span class="badge text-bg-secondary skor-badge">{{ kume.guven_skoru }}</span></td>
+    <td>{{ kume.ihbarlar.count }}</td>
+    <td style="min-width: 190px;">
+        <form hx-post="{% url 'dashboard:kume_durum_guncelle' kume.id %}"
+              hx-target="#kume-satiri-{{ kume.id }}" hx-swap="outerHTML">
+            {% csrf_token %}
+            <select name="durum" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                {% for deger, etiket in durum_secenekleri %}
+                <option value="{{ deger }}" {% if deger == kume.durum %}selected{% endif %}>{{ etiket }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </td>
+    <td style="min-width: 220px;">
+        <form hx-post="{% url 'dashboard:kume_ekip_ata' kume.id %}"
+              hx-target="#kume-satiri-{{ kume.id }}" hx-swap="outerHTML"
+              class="d-flex gap-1">
+            {% csrf_token %}
+            <select name="ekip_id" class="form-select form-select-sm">
+                <option value="">— Ekip seç —</option>
+                {% for ekip in ekipler %}
+                <option value="{{ ekip.id }}" {% if kume.atanan_ekip_id == ekip.id %}selected{% endif %}>
+                    {{ ekip.ad }} ({{ ekip.get_tur_display }}, {{ ekip.get_durum_display }})
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Ata</button>
+        </form>
+    </td>
+</tr>

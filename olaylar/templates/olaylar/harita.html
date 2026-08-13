@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Harita{% endblock %}
+
+{% block extra_head %}
+<style>
+    #harita { height: 75vh; width: 100%; border-radius: .375rem; }
+    .lejant span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Olay Haritası <span class="badge text-bg-success align-middle" id="canli-rozet">🟢 canlı</span></h2>
+    <div class="lejant small text-muted">
+        <span style="background:#dc3545;"></span>Kritik (80+)
+        <span style="background:#fd7e14;"></span>Yüksek (60-79)
+        <span style="background:#0dcaf0;"></span>Orta (40-59)
+        <span style="background:#198754;"></span>Düşük (&lt;40)
+        &nbsp;|&nbsp; 🚑 Ekip (yeşil=boşta, gri=meşgul)
+    </div>
+</div>
+
+<div id="harita"></div>
+<p class="text-muted small mt-2">
+    Yeni ihbar, durum güncelleme veya ekip ataması olduğunda harita WebSocket üzerinden otomatik yenilenir.
+</p>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const harita = L.map('harita').setView([39.0, 35.0], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap katkıda bulunanlar',
+        maxZoom: 19,
+    }).addTo(harita);
+
+    // Dinamik marker'ları ayrı bir katmanda tutuyoruz ki her yenilemede
+    // sadece onları temizleyip yeniden çizebilelim (tile layer etkilenmez).
+    const marketKatmani = L.layerGroup().addTo(harita);
+
+    function kumeIkonu(renk) {
+        return L.divIcon({
+            className: '',
+            html: `<div style="background:${renk};width:18px;height:18px;border-radius:50%;border:2px solid white;box-shadow:0 0 3px rgba(0,0,0,.5);"></div>`,
+            iconSize: [18, 18],
+        });
+    }
+
+    function ekipIkonu(durum) {
+        const renk = durum === 'bosta' ? '#198754' : '#6c757d';
+        return L.divIcon({
+            className: '',
+            html: `<div style="background:${renk};width:14px;height:14px;border-radius:3px;border:2px solid white;box-shadow:0 0 3px rgba(0,0,0,.5);"></div>`,
+            iconSize: [14, 14],
+        });
+    }
+
+    async function haritayiYukle() {
+        const yanit = await fetch("{% url 'olaylar:harita_veri' %}");
+        const veri = await yanit.json();
+
+        marketKatmani.clearLayers();
+
+        veri.kumeler.forEach(kume => {
+            const popup = `
+                <strong>Olay Kümesi #${kume.id}</strong><br>
+                Öncelik: <b>${kume.oncelik_skoru}</b> · Güven: <b>${kume.guven_skoru}</b><br>
+                Durum: ${kume.durum_gosterim}<br>
+                İhbar sayısı: ${kume.ihbar_sayisi}
+                ${kume.detay_url ? `<br><a href="${kume.detay_url}">Detaya git →</a>` : ''}
+            `;
+            L.marker([kume.lat, kume.lng], { icon: kumeIkonu(kume.renk) })
+                .addTo(marketKatmani)
+                .bindPopup(popup);
+        });
+
+        veri.ekipler.forEach(ekip => {
+            const popup = `
+                <strong>${ekip.ad}</strong><br>
+                Tür: ${ekip.tur_gosterim}<br>
+                Durum: ${ekip.durum_gosterim}
+            `;
+            L.marker([ekip.lat, ekip.lng], { icon: ekipIkonu(ekip.durum) })
+                .addTo(marketKatmani)
+                .bindPopup(popup);
+        });
+    }
+
+    haritayiYukle();
+
+    // Canlı güncelleme: dashboard ile aynı WebSocket kanalına bağlanıyoruz.
+    // Mesajın içeriğiyle ilgilenmiyoruz (o, ana panelin HTML parçası) —
+    // herhangi bir mesaj gelmesi "bir şey değişti" anlamına gelir ve
+    // haritayı yeniden çekip çiziyoruz.
+    const semaVeHost = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+    const soket = new WebSocket(semaVeHost + '/ws/canli/');
+    const canliRozet = document.getElementById('canli-rozet');
+
+    soket.onopen = () => { canliRozet.textContent = '🟢 canlı'; };
+    soket.onclose = () => { canliRozet.textContent = '🔴 bağlantı koptu'; };
+    soket.onmessage = () => { haritayiYukle(); };
+</script>
+{% endblock %}

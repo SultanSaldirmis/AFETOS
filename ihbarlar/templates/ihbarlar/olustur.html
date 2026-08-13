@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}İhbar Oluştur{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <h2 class="mb-4">Yeni İhbar Oluştur</h2>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                {% include "ihbarlar/_form.html" %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

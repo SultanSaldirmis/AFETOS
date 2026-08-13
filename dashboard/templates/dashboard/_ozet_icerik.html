@@ -1,0 +1,78 @@
+{% load static %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card kart-vurgu shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Toplam İhbar</div>
+                <div class="fs-3 fw-bold">{{ toplam_ihbar_sayisi }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm" style="border-left: 4px solid #dc3545;">
+            <div class="card-body">
+                <div class="text-muted small">Aktif Olay Kümesi</div>
+                <div class="fs-3 fw-bold">{{ aktif_kume_sayisi }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm" style="border-left: 4px solid #fd7e14;">
+            <div class="card-body">
+                <div class="text-muted small">Doğrulama Bekleyen</div>
+                <div class="fs-3 fw-bold">{{ dogrulaniyor_sayisi }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm" style="border-left: 4px solid #198754;">
+            <div class="card-body">
+                <div class="text-muted small">Boşta Ekip</div>
+                <div class="fs-3 fw-bold">{{ bosta_ekip_sayisi }} / {{ toplam_ekip_sayisi }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>En Kritik Olaylar (öncelik skoruna göre)</span>
+        <a href="{% url 'olaylar:harita' %}" class="btn btn-sm btn-outline-primary">Haritada Gör</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Öncelik</th>
+                    <th>Güven</th>
+                    <th>Durum</th>
+                    <th>İhbar Sayısı</th>
+                    <th>Atanan Ekip</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kume in kritik_kumeler %}
+                <tr>
+                    <td>#{{ kume.id }}</td>
+                    <td><span class="badge text-bg-{{ kume.oncelik_renk }} skor-badge">{{ kume.oncelik_skoru }}</span></td>
+                    <td><span class="badge text-bg-secondary skor-badge">{{ kume.guven_skoru }}</span></td>
+                    <td>{{ kume.get_durum_display }}</td>
+                    <td>{{ kume.ihbarlar.count }}</td>
+                    <td>{{ kume.atanan_ekip.ad|default:"—" }}</td>
+                    <td>
+                        {% with ilk_ihbar=kume.ihbarlar.first %}
+                        {% if ilk_ihbar %}
+                        <a href="{% url 'ihbarlar:detay' ilk_ihbar.id %}" class="btn btn-sm btn-outline-secondary">Detay</a>
+                        {% endif %}
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">Henüz aktif bir olay kümesi yok.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

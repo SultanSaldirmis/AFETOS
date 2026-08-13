@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}İhbar #{{ ihbar.id }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">İhbar #{{ ihbar.id }}</h2>
+            <a href="{% url 'ihbarlar:olustur' %}" class="btn btn-outline-secondary btn-sm">+ Yeni İhbar</a>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">İhbar Bilgileri</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Olay Türü</dt>
+                    <dd class="col-sm-8">{{ ihbar.get_olay_turu_display }}</dd>
+
+                    <dt class="col-sm-4">Açıklama</dt>
+                    <dd class="col-sm-8">{{ ihbar.aciklama }}</dd>
+
+                    <dt class="col-sm-4">Konum</dt>
+                    <dd class="col-sm-8">{{ ihbar.lat }}, {{ ihbar.lng }}</dd>
+
+                    <dt class="col-sm-4">Tahmini Etkilenen</dt>
+                    <dd class="col-sm-8">{{ ihbar.tahmini_kisi_sayisi }} kişi</dd>
+
+                    <dt class="col-sm-4">Tahmini Yaralı</dt>
+                    <dd class="col-sm-8">{{ ihbar.tahmini_yarali_sayisi }} kişi</dd>
+
+                    <dt class="col-sm-4">Oluşturulma</dt>
+                    <dd class="col-sm-8">{{ ihbar.olusturulma_zamani|date:"d.m.Y H:i" }}</dd>
+
+                    {% if ihbar.fotograf %}
+                    <dt class="col-sm-4">Fotoğraf</dt>
+                    <dd class="col-sm-8"><img src="{{ ihbar.fotograf.url }}" class="img-fluid rounded" style="max-height:220px;"></dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        {% if kume %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">Olay Kümesi Değerlendirmesi (#{{ kume.id }})</div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="text-muted small">Öncelik Skoru</div>
+                        <span class="badge text-bg-{{ kume.oncelik_renk }} fs-5">{{ kume.oncelik_skoru }}</span>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted small">Güven Skoru</div>
+                        <span class="badge text-bg-secondary fs-5">{{ kume.guven_skoru }}</span>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted small">Durum</div>
+                        <span class="badge text-bg-dark fs-6">{{ kume.get_durum_display }}</span>
+                    </div>
+                </div>
+
+                {% if dogrulama_gerekli %}
+                <div class="alert alert-warning mb-3">
+                    ⚠️ Güven skoru düşük — bu olay <strong>doğrulama gerektiriyor</strong>.
+                    İhbar silinmedi, sadece işaretlendi; ek ihbarlar geldikçe güven skoru güncellenecek.
+                </div>
+                {% endif %}
+
+                <p class="mb-1"><strong>Kümedeki toplam ihbar sayısı:</strong> {{ kume.ihbarlar.count }}</p>
+                <p class="mb-0"><strong>Atanan ekip:</strong> {{ kume.atanan_ekip.ad|default:"Henüz atanmadı" }}</p>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">Önerilen Ekip</div>
+            <div class="card-body">
+                {% if onerilen_ekip %}
+                <p class="mb-1"><strong>{{ onerilen_ekip.ad }}</strong> ({{ onerilen_ekip.get_tur_display }})</p>
+                <p class="text-muted small mb-0">
+                    Bu öneri, olay türüne uygun ve şu an boşta olan ekipler arasından mesafeye göre seçildi.
+                    Ekibi atamak için <a href="{% url 'dashboard:yonetim_paneli' %}">Yönetim Paneli</a>'ni kullanın.
+                </p>
+                {% else %}
+                <p class="text-muted mb-0">Şu anda uygun (boşta) bir ekip bulunamadı.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">Bu ihbar henüz bir olay kümesine atanmadı.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

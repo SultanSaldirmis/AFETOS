@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Ana Panel{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Genel Durum Özeti</h2>
+    <span class="badge text-bg-success">🟢 canlı</span>
+</div>
+
+<!-- Görünmez WebSocket bağlantı elementi: gelen mesajlar hx-swap-oob ile
+     #dashboard-ozet içine uygulanır, bu elemanın kendisi hiç değişmez. -->
+<div hx-ext="ws"
+     ws-connect="{% if request.is_secure %}wss{% else %}ws{% endif %}://{{ request.get_host }}/ws/canli/"
+     style="display:none;"></div>
+
+<div id="dashboard-ozet">
+    {% include "dashboard/_ozet_icerik.html" %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+{% endblock %}

@@ -1,0 +1,56 @@
+<div id="ihbar-form-wrapper">
+    <form hx-post="{% url 'ihbarlar:olustur' %}" hx-encoding="multipart/form-data"
+          hx-target="#ihbar-form-wrapper" hx-swap="outerHTML">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3 mb-3">
+            <div class="col-6">
+                <label class="form-label">Enlem (lat)</label>
+                {{ form.lat }}
+                {% for hata in form.lat.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+            </div>
+            <div class="col-6">
+                <label class="form-label">Boylam (lng)</label>
+                {{ form.lng }}
+                {% for hata in form.lng.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Olay Türü</label>
+            {{ form.olay_turu }}
+            {% for hata in form.olay_turu.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Açıklama</label>
+            {{ form.aciklama }}
+            {% for hata in form.aciklama.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-6">
+                <label class="form-label">Tahmini Etkilenen Kişi Sayısı</label>
+                {{ form.tahmini_kisi_sayisi }}
+                {% for hata in form.tahmini_kisi_sayisi.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+            </div>
+            <div class="col-6">
+                <label class="form-label">Tahmini Yaralı Sayısı</label>
+                {{ form.tahmini_yarali_sayisi }}
+                {% for hata in form.tahmini_yarali_sayisi.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Fotoğraf (opsiyonel, doğrulayıcı sinyal olarak kullanılır)</label>
+            {{ form.fotograf }}
+            {% for hata in form.fotograf.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-danger w-100">İhbarı Gönder</button>
+    </form>
+</div>
