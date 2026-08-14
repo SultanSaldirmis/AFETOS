@@ -1,0 +1,120 @@
+/*
+ * AFETOS tema katmanı.
+ *
+ * Bootstrap 5 sökülmedi — grid/utility class'ları (d-flex, gap-3, vb.)
+ * kullanılmaya devam ediyor. Bu dosya SADECE görsel değerleri (renk,
+ * tipografi, radius, spacing) mockup'taki (AFETOS Panel.dc.html) :root
+ * değişkenleriyle birebir override ediyor. base.html içinde bootstrap.css
+ * SONRA yükleniyor, sıralama önemli.
+ */
+
+:root {
+  --bg: #0E1116; --panel: #151A21; --panel-2: #1B2129; --panel-3: #212934;
+  --line: #242C36; --line-soft: #1D242C;
+  --text: #E6EAF0; --text-2: #98A4B3; --text-3: #68737F;
+  --crit: #E5484D; --high: #F08A24; --med: #3E8BD6; --low: #2F9E6E;
+  --crit-bg: rgba(229, 72, 77, .13); --high-bg: rgba(240, 138, 36, .13);
+  --med-bg: rgba(62, 139, 214, .13); --low-bg: rgba(47, 158, 110, .13);
+  --live: #39C793; --quake: #8A93A0;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+  --r-sm: 4px; --r-md: 6px; --r-lg: 8px;
+  --fs-kpi: 34px; --fs-h1: 19px; --fs-h2: 13px; --fs-body: 14px; --fs-sm: 12px; --fs-xs: 11px;
+  --sans: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Bootstrap'in kendi renk değişkenlerini temaya bağla, böylece
+     Bootstrap bileşenleri (badge, btn, table vb.) de tema paletini kullanır. */
+  --bs-body-bg: var(--bg);
+  --bs-body-color: var(--text);
+  --bs-border-color: var(--line);
+  --bs-body-font-family: var(--sans);
+  --bs-danger: var(--crit);
+  --bs-warning: var(--high);
+  --bs-info: var(--med);
+  --bs-success: var(--low);
+  --bs-primary: var(--med);
+  --bs-link-color: var(--med);
+  --bs-link-hover-color: #74AAE6;
+}
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--med); text-decoration: none; }
+a:hover { color: #74AAE6; }
+
+::selection { background: var(--med); color: #fff; }
+
+/* Form kontrolleri, kartlar, tablolar — Bootstrap bileşenlerini temaya taşı */
+.form-control, .form-select {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  font-family: var(--sans); font-size: var(--fs-body); border-radius: var(--r-sm);
+}
+.form-control:focus, .form-select:focus {
+  background: var(--panel-2); color: var(--text);
+  border-color: var(--med); box-shadow: 0 0 0 3px rgba(62, 139, 214, .18);
+}
+.form-control::placeholder { color: var(--text-3); }
+/* Form validasyonu: bir alanın hemen ardından .hata-mesaji varsa (bkz.
+   şablonlardaki hata div'leri), o alanın kenarlığını kırmızıya çevir.
+   Ekstra JS/is-invalid class yönetimi gerekmiyor. */
+.form-control:has(+ .hata-mesaji), .form-select:has(+ .hata-mesaji) { border-color: var(--crit); }
+.hata-mesaji { font-size: var(--fs-sm); color: var(--crit); margin-top: 4px; }
+.form-label { font-size: var(--fs-xs); letter-spacing: .09em; text-transform: uppercase; color: var(--text-3); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.card-header { background: var(--panel-2); border-bottom: 1px solid var(--line); font-size: var(--fs-h2); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+.table { color: var(--text); }
+.table > :not(caption) > * > * { background: transparent; color: var(--text); border-bottom-color: var(--line-soft); }
+.table-light, thead.table-light { background: var(--panel-2); color: var(--text-3); }
+.table-hover > tbody > tr:hover > * { background: var(--panel-2); }
+.btn { font-family: var(--sans); border-radius: var(--r-md); }
+.btn-danger { background: var(--crit); border-color: var(--crit); }
+.btn-danger:hover { background: #CF3F44; border-color: #CF3F44; }
+.btn-primary { background: var(--med); border-color: var(--med); }
+.btn-outline-secondary { color: var(--text-2); border-color: var(--line); }
+.btn-outline-secondary:hover { background: var(--panel-3); color: var(--text); border-color: var(--line); }
+.alert-danger { background: var(--crit-bg); border-color: rgba(229, 72, 77, .4); color: var(--crit); }
+.alert-info { background: var(--med-bg); border-color: rgba(62, 139, 214, .4); color: var(--med); }
+.alert-warning { background: var(--high-bg); border-color: rgba(240, 138, 36, .4); color: var(--high); }
+.badge.text-bg-danger { background: var(--crit-bg) !important; color: var(--crit) !important; border: 1px solid rgba(229, 72, 77, .4); }
+.badge.text-bg-warning { background: var(--high-bg) !important; color: var(--high) !important; border: 1px solid rgba(240, 138, 36, .4); }
+.badge.text-bg-info { background: var(--med-bg) !important; color: var(--med) !important; border: 1px solid rgba(62, 139, 214, .4); }
+.badge.text-bg-success { background: var(--low-bg) !important; color: var(--low) !important; border: 1px solid rgba(47, 158, 110, .4); }
+.badge.text-bg-secondary { background: var(--panel-3) !important; color: var(--text-2) !important; border: 1px solid var(--line); }
+.badge.text-bg-dark { background: var(--panel-3) !important; color: var(--text) !important; border: 1px solid var(--line); }
+
+/* Öncelik seviyesi yardımcı sınıfları (skor rozetleri, harita marker renkleri vb.) */
+.tier-crit { color: var(--crit); background: var(--crit-bg); border-color: rgba(229, 72, 77, .4); }
+.tier-high { color: var(--high); background: var(--high-bg); border-color: rgba(240, 138, 36, .4); }
+.tier-med  { color: var(--med);  background: var(--med-bg);  border-color: rgba(62, 139, 214, .4); }
+.tier-low  { color: var(--low);  background: var(--low-bg);  border-color: rgba(47, 158, 110, .4); }
+
+@keyframes afetosPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.canli-nokta { animation: afetosPulse 2s ease-in-out infinite; }
+
+/* Leaflet — koyu tema */
+.leaflet-container { background: #0A0D11; font-family: var(--sans); }
+.leaflet-control-zoom a { background: var(--panel-2) !important; color: var(--text) !important; border-color: var(--line) !important; font-weight: 500; }
+.leaflet-control-zoom a:hover { background: var(--panel-3) !important; }
+.leaflet-bar { border: 1px solid var(--line) !important; box-shadow: none !important; }
+.leaflet-control-attribution { background: rgba(14, 17, 22, .82) !important; color: var(--text-3) !important; font-size: 10px !important; }
+.leaflet-control-attribution a { color: var(--text-2) !important; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel-2); color: var(--text); border-radius: var(--r-md); box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
+
+/* Noktalı doku (login/kayıt split-screen sol panel) */
+.afetos-doku {
+  position: absolute; inset: 0; opacity: .5; pointer-events: none;
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Bootstrap'in genel karanlık-yüzey öğeleri (navbar-dark vb.) zaten uygun;
+   scrollbar'ı da temaya benzet (opsiyonel, sadece webkit) */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--panel); }
+::-webkit-scrollbar-thumb { background: var(--panel-3); border-radius: 6px; border: 2px solid var(--panel); }

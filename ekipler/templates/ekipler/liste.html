@@ -2,49 +2,64 @@
 {% block title %}Ekipler{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Ekipler</h2>
+<div style="display:flex;flex-direction:column;gap:var(--sp-5)">
 
-<div class="card shadow-sm">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Ad</th>
-                    <th>Tür</th>
-                    <th>Konum</th>
-                    <th>Durum</th>
-                    <th>Aktif Görev (Olay Kümesi)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ekip in ekipler %}
-                <tr>
-                    <td>{{ ekip.ad }}</td>
-                    <td>{{ ekip.get_tur_display }}</td>
-                    <td class="text-muted small">{{ ekip.lat }}, {{ ekip.lng }}</td>
-                    <td>
-                        {% if ekip.durum == 'bosta' %}
-                        <span class="badge text-bg-success">Boşta</span>
-                        {% elif ekip.durum == 'yolda' %}
-                        <span class="badge text-bg-warning">Yolda</span>
-                        {% else %}
-                        <span class="badge text-bg-secondary">Görevde</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if ekip.mevcut_olay_kumesi %}
-                        <a href="{% url 'olaylar:harita' %}">Olay Kümesi #{{ ekip.mevcut_olay_kumesi.id }}</a>
-                        {% else %}
-                        <span class="text-muted">—</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="text-center text-muted py-4">Henüz kayıtlı ekip yok.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-4)">
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Toplam Ekip</div>
+      <div style="font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;line-height:1">{{ kpi.toplam }}</div>
     </div>
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Boşta</div>
+      <div style="font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;line-height:1;color:var(--low)">{{ kpi.bosta }}</div>
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Görevde</div>
+      <div style="font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;line-height:1;color:var(--med)">{{ kpi.gorevde }}</div>
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Yolda</div>
+      <div style="font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;line-height:1;color:var(--high)">{{ kpi.yolda }}</div>
+    </div>
+  </div>
+
+  <section style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line);gap:var(--sp-4);flex-wrap:wrap">
+      <h1 style="margin:0;font-size:var(--fs-h1);font-weight:600;white-space:nowrap">Ekipler</h1>
+      <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap">
+        <a href="{% url 'ekipler:liste' %}" style="background:{% if not secili_tur %}var(--panel-3){% else %}transparent{% endif %};border:1px solid var(--line);color:{% if not secili_tur %}var(--text){% else %}var(--text-2){% endif %};font-family:var(--sans);font-size:var(--fs-sm);border-radius:var(--r-sm);padding:5px 11px">Tümü</a>
+        {% for deger, etiket in tur_secenekleri %}
+        <a href="?tur={{ deger }}" style="background:{% if secili_tur == deger %}var(--panel-3){% else %}transparent{% endif %};border:1px solid var(--line);color:{% if secili_tur == deger %}var(--text){% else %}var(--text-2){% endif %};font-family:var(--sans);font-size:var(--fs-sm);border-radius:var(--r-sm);padding:5px 11px">{{ etiket }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="overflow-x:auto">
+    <div style="min-width:900px">
+      <div style="display:grid;grid-template-columns:170px 170px 150px minmax(180px,1fr) 150px;align-items:center;gap:var(--sp-3);padding:10px var(--sp-5);border-bottom:1px solid var(--line);background:var(--panel-2);font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">
+        <div>Ekip Adı</div><div>Tür</div><div>Durum</div><div>Mevcut Olay</div><div>Konum</div>
+      </div>
+      {% for ekip in ekipler %}
+      <div style="display:grid;grid-template-columns:170px 170px 150px minmax(180px,1fr) 150px;align-items:center;gap:var(--sp-3);padding:14px var(--sp-5);border-bottom:1px solid var(--line-soft)">
+        <div style="font-family:var(--mono);font-size:var(--fs-body);font-weight:500">{{ ekip.ad }}</div>
+        <div style="font-size:var(--fs-sm);color:var(--text-2)">{{ ekip.get_tur_display }}</div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="width:7px;height:7px;border-radius:50%;background:{% if ekip.durum == 'bosta' %}var(--low){% elif ekip.durum == 'yolda' %}var(--high){% else %}var(--med){% endif %}"></span>
+          <span style="font-size:var(--fs-sm);color:var(--text)">{{ ekip.get_durum_display }}</span>
+        </div>
+        <div style="font-size:var(--fs-sm);color:{% if ekip.mevcut_olay_kumesi %}var(--text-2){% else %}var(--text-3){% endif %};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          {% if ekip.mevcut_olay_kumesi %}#{{ ekip.mevcut_olay_kumesi.id }} — öncelik {{ ekip.mevcut_olay_kumesi.oncelik_skoru }}{% else %}—{% endif %}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">{{ ekip.lat|floatformat:3 }}, {{ ekip.lng|floatformat:3 }}</span>
+          <a href="{% url 'olaylar:harita' %}" style="font-size:var(--fs-sm)">Haritada gör</a>
+        </div>
+      </div>
+      {% empty %}
+      <div style="padding:var(--sp-6) var(--sp-5);text-align:center;color:var(--text-3)">Bu türde ekip yok.</div>
+      {% endfor %}
+    </div>
+    </div>
+  </section>
 </div>
-<p class="text-muted small mt-2">Bu sayfada canlı güncelleme yok; gerekirse sayfayı yenileyin.</p>
 {% endblock %}

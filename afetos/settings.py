@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -46,7 +47,29 @@ INSTALLED_APPS = [
     'olaylar',
     'ekipler',
     'dashboard',
+    'hesaplar',
+    'deprem',
 ]
+
+# Kandilli deprem proxy'si (deprem/views.py) için önbellek. Prototip
+# kapsamında bellek-içi LocMemCache yeterli — Redis'e geçilmedi.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+# --- Kimlik doğrulama ---
+# Giriş yapmamış kullanıcı @login_required korumalı bir sayfaya gidince
+# buraya yönlendirilir. Rol bazlı yönlendirme (koordinatör/saha/vatandaş)
+# hesaplar/views.py içindeki rol_bazli_yonlendir() fonksiyonunda yapılır.
+LOGIN_URL = 'login'
+
+# Testler çok sayıda kullanıcı oluşturup giriş yapıyor; varsayılan PBKDF2
+# hasher'ın yüksek iterasyon sayısı testleri gereksiz yavaşlatıyor. Sadece
+# test çalıştırılırken (manage.py test) hızlı bir hasher kullan.
+if 'test' in sys.argv:
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
 
 ASGI_APPLICATION = 'afetos.asgi.application'
 
@@ -81,6 +104,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'dashboard.context_processors.nav_sekmeleri',
             ],
         },
     },
@@ -135,6 +159,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Kullanıcıların yüklediği dosyalar (ör. ihbar fotoğrafları)
 MEDIA_URL = 'media/'

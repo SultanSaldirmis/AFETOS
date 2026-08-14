@@ -49,26 +49,28 @@ class OlayKumesi(models.Model):
         return f'Olay Kümesi #{self.pk} — {self.get_durum_display()} (öncelik: {self.oncelik_skoru})'
 
     @property
-    def oncelik_renk(self) -> str:
+    def oncelik_renk_kod(self) -> str:
         """
-        Öncelik skoruna göre Bootstrap renk sınıfı döner (harita/panelde
-        renk kodlu gösterim için). Bu SADECE görsel bir kategorilendirmedir,
-        skor hesaplama mantığı değildir — o olaylar/scoring.py içindedir.
+        Öncelik skoruna göre theme.css'teki tier adını döner ('crit',
+        'high', 'med', 'low' — bkz. static/css/theme.css :root
+        değişkenleri: --crit/--high/--med/--low ve *-bg varyantları).
+        Bu SADECE görsel bir kategorilendirmedir, skor hesaplama mantığı
+        değildir — o olaylar/scoring.py içindedir.
         """
         if self.oncelik_skoru >= 80:
-            return 'danger'
+            return 'crit'
         if self.oncelik_skoru >= 60:
-            return 'warning'
+            return 'high'
         if self.oncelik_skoru >= 40:
-            return 'info'
-        return 'success'
+            return 'med'
+        return 'low'
 
     @property
     def oncelik_hex_renk(self) -> str:
-        """Leaflet marker'ları için oncelik_renk'in hex karşılığı."""
+        """Leaflet marker'ları için oncelik_renk_kod'un hex karşılığı (theme.css ile birebir)."""
         return {
-            'danger': '#dc3545',
-            'warning': '#fd7e14',
-            'info': '#0dcaf0',
-            'success': '#198754',
-        }[self.oncelik_renk]
+            'crit': '#E5484D',
+            'high': '#F08A24',
+            'med': '#3E8BD6',
+            'low': '#2F9E6E',
+        }[self.oncelik_renk_kod]

@@ -3,103 +3,231 @@
 
 {% block extra_head %}
 <style>
-    #harita { height: 75vh; width: 100%; border-radius: .375rem; }
-    .lejant span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; }
+    html, body { overflow: hidden; }
+    #harita-govde { display: flex; height: calc(100vh - 56px); }
+    #harita-sidebar { width: 320px; flex: 0 0 320px; border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+    #harita-liste { overflow: auto; flex: 1 1 auto; }
+    #harita-liste .satir:hover { background: var(--panel-2); }
+    #harita { position: absolute; inset: 0; }
+    .harita-kontrol-btn { font-size: var(--fs-sm); padding: 6px 12px; border-left: 1px solid var(--line); color: var(--text-2); cursor: pointer; user-select: none; }
+    .harita-kontrol-btn:first-child { border-left: 0; }
+    .harita-kontrol-btn.aktif { color: var(--text); background: var(--panel-3); }
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Olay Haritası <span class="badge text-bg-success align-middle" id="canli-rozet">🟢 canlı</span></h2>
-    <div class="lejant small text-muted">
-        <span style="background:#dc3545;"></span>Kritik (80+)
-        <span style="background:#fd7e14;"></span>Yüksek (60-79)
-        <span style="background:#0dcaf0;"></span>Orta (40-59)
-        <span style="background:#198754;"></span>Düşük (&lt;40)
-        &nbsp;|&nbsp; 🚑 Ekip (yeşil=boşta, gri=meşgul)
+{% block page_wrapper %}
+<div id="harita-govde">
+    <aside id="harita-sidebar">
+        <div style="padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:var(--sp-1)">
+            <h1 style="margin:0;font-size:var(--fs-h1);font-weight:600">Operasyon Haritası</h1>
+            <div style="font-size:var(--fs-sm);color:var(--text-3)">{{ aktif_kume_sayisi }} aktif olay · {{ ekip_sayisi }} ekip</div>
+        </div>
+        <div style="padding:var(--sp-3) var(--sp-5);border-bottom:1px solid var(--line);font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Olay Listesi</div>
+        <div id="harita-liste"></div>
+    </aside>
+
+    <div style="position:relative;flex:1 1 auto;min-width:0">
+        <div id="harita"></div>
+
+        <div style="position:absolute;top:var(--sp-4);left:var(--sp-4);z-index:600;display:flex;gap:var(--sp-2)">
+            <div id="harita-canli-rozet" style="display:flex;align-items:center;gap:7px;background:rgba(14,17,22,.92);border:1px solid rgba(57,199,147,.35);border-radius:999px;padding:6px 12px">
+                <span class="canli-nokta" style="width:7px;height:7px;border-radius:50%;background:var(--live)"></span>
+                <span style="font-family:var(--mono);font-size:var(--fs-xs);font-weight:600;letter-spacing:.1em;color:var(--live)">CANLI</span>
+            </div>
+            <div style="display:flex;align-items:center;background:rgba(14,17,22,.92);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden">
+                <span class="harita-kontrol-btn aktif" data-katman="olaylar">Olaylar</span>
+                <span class="harita-kontrol-btn aktif" data-katman="ekipler">Ekipler</span>
+                <span class="harita-kontrol-btn aktif" data-katman="deprem">Deprem</span>
+            </div>
+        </div>
+
+        <div style="position:absolute;top:var(--sp-4);right:var(--sp-4);z-index:600;width:216px;background:rgba(14,17,22,.94);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Lejant</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:var(--crit);border:2px solid rgba(229,72,77,.35)"></span><span style="font-size:var(--fs-sm);flex:1">Kritik</span><span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">80+</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:var(--high);border:2px solid rgba(240,138,36,.35)"></span><span style="font-size:var(--fs-sm);flex:1">Yüksek</span><span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">60–79</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:var(--med);border:2px solid rgba(62,139,214,.35)"></span><span style="font-size:var(--fs-sm);flex:1">Orta</span><span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">40–59</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:var(--low);border:2px solid rgba(47,158,110,.35)"></span><span style="font-size:var(--fs-sm);flex:1">Düşük</span><span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">&lt;40</span></div>
+            </div>
+            <div style="height:1px;background:var(--line)"></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:3px;background:var(--low)"></span><span style="font-size:var(--fs-sm)">Ekip · boşta</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:3px;background:#5A6472"></span><span style="font-size:var(--fs-sm)">Ekip · meşgul</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border:1.5px dashed var(--quake);transform:rotate(45deg)"></span><span style="font-size:var(--fs-sm)">Kandilli deprem</span></div>
+            </div>
+        </div>
+
+        <div id="harita-sayac-bar" style="position:absolute;bottom:var(--sp-4);left:var(--sp-4);z-index:600;background:rgba(14,17,22,.92);border:1px solid var(--line);border-radius:var(--r-md);padding:9px var(--sp-4);display:flex;gap:var(--sp-5);font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-2)"></div>
     </div>
 </div>
-
-<div id="harita"></div>
-<p class="text-muted small mt-2">
-    Yeni ihbar, durum güncelleme veya ekip ataması olduğunda harita WebSocket üzerinden otomatik yenilenir.
-</p>
-
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
 <script>
-    const harita = L.map('harita').setView([39.0, 35.0], 6);
+    const harita = L.map('harita', { zoomControl: true }).setView([38.5, 35.5], 6);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap katkıda bulunanlar',
         maxZoom: 19,
     }).addTo(harita);
 
-    // Dinamik marker'ları ayrı bir katmanda tutuyoruz ki her yenilemede
-    // sadece onları temizleyip yeniden çizebilelim (tile layer etkilenmez).
-    const marketKatmani = L.layerGroup().addTo(harita);
+    const olayKatmani = L.layerGroup().addTo(harita);
+    const ekipKatmani = L.layerGroup().addTo(harita);
+    const depremKatmani = L.layerGroup().addTo(harita); // Kandilli entegrasyonu sıradaki adımda dolduracak
+
+    const KATMANLAR = { olaylar: olayKatmani, ekipler: ekipKatmani, deprem: depremKatmani };
+
+    document.querySelectorAll('.harita-kontrol-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const katman = KATMANLAR[btn.dataset.katman];
+            if (btn.classList.contains('aktif')) {
+                harita.removeLayer(katman);
+                btn.classList.remove('aktif');
+            } else {
+                katman.addTo(harita);
+                btn.classList.add('aktif');
+            }
+        });
+    });
 
     function kumeIkonu(renk) {
         return L.divIcon({
-            className: '',
-            html: `<div style="background:${renk};width:18px;height:18px;border-radius:50%;border:2px solid white;box-shadow:0 0 3px rgba(0,0,0,.5);"></div>`,
+            className: '', html: `<div style="background:${renk};width:18px;height:18px;border-radius:50%;border:2px solid #0E1116;box-shadow:0 0 0 2px ${renk}55;"></div>`,
             iconSize: [18, 18],
         });
     }
-
     function ekipIkonu(durum) {
-        const renk = durum === 'bosta' ? '#198754' : '#6c757d';
+        const renk = durum === 'bosta' ? '#2F9E6E' : '#5A6472';
         return L.divIcon({
-            className: '',
-            html: `<div style="background:${renk};width:14px;height:14px;border-radius:3px;border:2px solid white;box-shadow:0 0 3px rgba(0,0,0,.5);"></div>`,
+            className: '', html: `<div style="background:${renk};width:14px;height:14px;border-radius:3px;border:2px solid #0E1116;"></div>`,
             iconSize: [14, 14],
         });
+    }
+    // Kandilli deprem marker'ı: AFETOS'un kendi olay/ekip ikonlarından
+    // BİLEREK belirgin şekilde farklı — kırık/noktalı halka + büyüklük
+    // rakamı, theme.css'teki --quake (nötr gri) rengiyle. Bu veri AFETOS'un
+    // güven/öncelik skoruna asla girmez, sadece görsel referans katmanıdır.
+    function depremIkonu(buyukluk) {
+        const boyut = buyukluk >= 4 ? 30 : buyukluk >= 3 ? 24 : 18;
+        return L.divIcon({
+            className: '',
+            html: `<div style="width:${boyut}px;height:${boyut}px;border-radius:50%;border:2px dashed var(--quake);display:flex;align-items:center;justify-content:center;background:rgba(138,147,160,.12);font-family:var(--mono);font-size:${boyut > 24 ? 11 : 9}px;font-weight:600;color:var(--quake)">${buyukluk.toFixed(1)}</div>`,
+            iconSize: [boyut, boyut],
+            iconAnchor: [boyut / 2, boyut / 2],
+        });
+    }
+
+    let sonVeri = null;
+
+    function listeyiCiz(veri) {
+        const kok = document.getElementById('harita-liste');
+        kok.innerHTML = '';
+        veri.kumeler.slice().sort((a, b) => b.oncelik_skoru - a.oncelik_skoru).forEach(k => {
+            const satir = document.createElement('div');
+            satir.className = 'satir';
+            satir.style.cssText = 'display:flex;align-items:center;gap:12px;padding:11px 24px;border-bottom:1px solid var(--line-soft);cursor:pointer';
+            satir.innerHTML = `
+                <span style="width:8px;height:8px;border-radius:2px;background:${k.renk};flex:0 0 auto"></span>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.olay_turu_gosterim}</div>
+                    <div style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">#${k.id} · ${k.ihbar_sayisi} ihbar</div>
+                </div>
+                <span style="font-family:var(--mono);font-size:var(--fs-body);font-weight:600;color:${k.renk}">${k.oncelik_skoru}</span>
+            `;
+            satir.addEventListener('click', () => harita.flyTo([k.lat, k.lng], 13, { duration: .6 }));
+            kok.appendChild(satir);
+        });
+    }
+
+    function sayaclariCiz(veri) {
+        const sayilar = { crit: 0, high: 0, med: 0, low: 0 };
+        veri.kumeler.forEach(k => { sayilar[k.renk_kod] = (sayilar[k.renk_kod] || 0) + 1; });
+        document.getElementById('harita-sayac-bar').innerHTML = `
+            <span>KRİTİK <span style="color:var(--crit)">${sayilar.crit}</span></span>
+            <span>YÜKSEK <span style="color:var(--high)">${sayilar.high}</span></span>
+            <span>ORTA <span style="color:var(--med)">${sayilar.med}</span></span>
+            <span>DÜŞÜK <span style="color:var(--low)">${sayilar.low}</span></span>
+        `;
     }
 
     async function haritayiYukle() {
         const yanit = await fetch("{% url 'olaylar:harita_veri' %}");
         const veri = await yanit.json();
+        sonVeri = veri;
 
-        marketKatmani.clearLayers();
+        olayKatmani.clearLayers();
+        ekipKatmani.clearLayers();
 
         veri.kumeler.forEach(kume => {
             const popup = `
-                <strong>Olay Kümesi #${kume.id}</strong><br>
+                <strong>${kume.olay_turu_gosterim}</strong><br>
                 Öncelik: <b>${kume.oncelik_skoru}</b> · Güven: <b>${kume.guven_skoru}</b><br>
                 Durum: ${kume.durum_gosterim}<br>
                 İhbar sayısı: ${kume.ihbar_sayisi}
                 ${kume.detay_url ? `<br><a href="${kume.detay_url}">Detaya git →</a>` : ''}
             `;
-            L.marker([kume.lat, kume.lng], { icon: kumeIkonu(kume.renk) })
-                .addTo(marketKatmani)
-                .bindPopup(popup);
+            L.marker([kume.lat, kume.lng], { icon: kumeIkonu(kume.renk) }).addTo(olayKatmani).bindPopup(popup);
         });
 
         veri.ekipler.forEach(ekip => {
-            const popup = `
-                <strong>${ekip.ad}</strong><br>
-                Tür: ${ekip.tur_gosterim}<br>
-                Durum: ${ekip.durum_gosterim}
-            `;
-            L.marker([ekip.lat, ekip.lng], { icon: ekipIkonu(ekip.durum) })
-                .addTo(marketKatmani)
-                .bindPopup(popup);
+            const popup = `<strong>${ekip.ad}</strong><br>Tür: ${ekip.tur_gosterim}<br>Durum: ${ekip.durum_gosterim}`;
+            L.marker([ekip.lat, ekip.lng], { icon: ekipIkonu(ekip.durum) }).addTo(ekipKatmani).bindPopup(popup);
         });
+
+        listeyiCiz(veri);
+        sayaclariCiz(veri);
     }
+
+    // --- Kandilli deprem katmanı (AFETOS'un kendi verisinden tamamen
+    // bağımsız, ayrı LayerGroup). Sayfa yüklendiğinde bir kere + kendi
+    // 60 saniyelik polling döngüsünde çekilir (mevcut WS canlı güncelleme
+    // döngüsüyle karıştırılmaz — bu ayrı, tek bir interval).
+    async function depremleriYukle() {
+        try {
+            const yanit = await fetch("{% url 'kandilli_proxy' %}");
+            const veri = await yanit.json();
+
+            depremKatmani.clearLayers();
+
+            (veri.result || []).forEach(dep => {
+                const [lng, lat] = dep.geojson.coordinates;
+                const sehir = dep.location_properties && dep.location_properties.closestCity
+                    ? dep.location_properties.closestCity.name : '';
+                const popup = `
+                    <strong>M ${dep.mag.toFixed(1)}</strong> — ${dep.title}<br>
+                    ${sehir ? `Yakın şehir: ${sehir}<br>` : ''}
+                    Derinlik: ${dep.depth} km<br>
+                    Zaman: ${dep.date_time}<br>
+                    <span style="color:var(--text-3);font-size:var(--fs-xs)">Kaynak: Kandilli Rasathanesi</span>
+                `;
+                L.marker([lat, lng], { icon: depremIkonu(dep.mag) }).addTo(depremKatmani).bindPopup(popup);
+            });
+
+            if (veri.error) {
+                console.warn('Kandilli verisi alınamadı:', veri.error);
+            }
+        } catch (hata) {
+            // Katman boş kalır, harita çökmez — sadece görsel referans katmanı.
+            console.warn('Kandilli isteği başarısız:', hata);
+        }
+    }
+
+    depremleriYukle();
+    setInterval(depremleriYukle, 60000);
 
     haritayiYukle();
 
-    // Canlı güncelleme: dashboard ile aynı WebSocket kanalına bağlanıyoruz.
-    // Mesajın içeriğiyle ilgilenmiyoruz (o, ana panelin HTML parçası) —
-    // herhangi bir mesaj gelmesi "bir şey değişti" anlamına gelir ve
-    // haritayı yeniden çekip çiziyoruz.
+    // Canlı güncelleme: dashboard ile aynı WebSocket kanalı. Mesaj
+    // içeriğiyle ilgilenmiyoruz — herhangi bir mesaj "bir şey değişti"
+    // demek, haritayı ve sidebar'ı yeniden çekip çiziyoruz.
     const semaVeHost = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
     const soket = new WebSocket(semaVeHost + '/ws/canli/');
-    const canliRozet = document.getElementById('canli-rozet');
+    const canliRozet = document.getElementById('harita-canli-rozet');
 
-    soket.onopen = () => { canliRozet.textContent = '🟢 canlı'; };
-    soket.onclose = () => { canliRozet.textContent = '🔴 bağlantı koptu'; };
+    soket.onclose = () => {
+        canliRozet.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--text-3)"></span><span style="font-family:var(--mono);font-size:var(--fs-xs);font-weight:600;letter-spacing:.1em;color:var(--text-3)">BAĞLANTI KOPTU</span>';
+    };
     soket.onmessage = () => { haritayiYukle(); };
 </script>
 {% endblock %}

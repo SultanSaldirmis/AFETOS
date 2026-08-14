@@ -2,14 +2,13 @@
 {% block title %}İhbar Oluştur{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-7">
-        <h2 class="mb-4">Yeni İhbar Oluştur</h2>
-        <div class="card shadow-sm">
-            <div class="card-body">
-                {% include "ihbarlar/_form.html" %}
-            </div>
+<div style="display:flex;justify-content:center">
+    <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:var(--sp-4)">
+        <div style="display:flex;flex-direction:column;gap:var(--sp-1)">
+            <h1 style="margin:0;font-size:var(--fs-h1);font-weight:600">İhbar Oluştur</h1>
+            <div style="font-size:var(--fs-sm);color:var(--text-3)">Kaydedilen ihbar öncelik motoruna anında iletilir.</div>
         </div>
+        {% include "ihbarlar/_form.html" %}
     </div>
 </div>
 {% endblock %}

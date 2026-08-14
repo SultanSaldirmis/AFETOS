@@ -1,56 +1,117 @@
 <div id="ihbar-form-wrapper">
     <form hx-post="{% url 'ihbarlar:olustur' %}" hx-encoding="multipart/form-data"
-          hx-target="#ihbar-form-wrapper" hx-swap="outerHTML">
+          hx-target="#ihbar-form-wrapper" hx-swap="outerHTML"
+          style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-5)">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        <div class="hata-mesaji" style="background:var(--crit-bg);border:1px solid rgba(229,72,77,.4);border-radius:var(--r-md);padding:10px 14px;margin:0">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <div class="row g-3 mb-3">
-            <div class="col-6">
-                <label class="form-label">Enlem (lat)</label>
-                {{ form.lat }}
-                {% for hata in form.lat.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
-            </div>
-            <div class="col-6">
-                <label class="form-label">Boylam (lng)</label>
-                {{ form.lng }}
-                {% for hata in form.lng.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Olay Türü</label>
+            <div id="olay-turu-butonlari" style="display:flex;flex-wrap:wrap;gap:var(--sp-2)"></div>
+            <div style="display:none">{{ form.olay_turu }}</div>
+            {% for hata in form.olay_turu.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Konum</label>
+            <div style="display:grid;grid-template-columns:1fr 240px;gap:var(--sp-3);align-items:start">
+                <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+                    <div style="display:flex;flex-direction:column;gap:5px">
+                        <span style="font-size:var(--fs-sm);color:var(--text-2)">Enlem</span>
+                        {{ form.lat }}
+                        {% for hata in form.lat.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:5px">
+                        <span style="font-size:var(--fs-sm);color:var(--text-2)">Boylam</span>
+                        {{ form.lng }}
+                        {% for hata in form.lng.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+                    </div>
+                    <div style="font-size:var(--fs-xs);color:var(--text-3)">Haritaya tıklayarak koordinatı işaretleyin.</div>
+                </div>
+                <div style="border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;height:186px">
+                    <div id="ihbar-mini-harita" style="width:100%;height:186px"></div>
+                </div>
             </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Olay Türü</label>
-            {{ form.olay_turu }}
-            {% for hata in form.olay_turu.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Açıklama</label>
+        <div style="display:flex;flex-direction:column;gap:5px">
+            <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Açıklama</label>
             {{ form.aciklama }}
-            {% for hata in form.aciklama.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+            {% for hata in form.aciklama.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
         </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-6">
-                <label class="form-label">Tahmini Etkilenen Kişi Sayısı</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)">
+            <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Tahmini Kişi Sayısı</label>
                 {{ form.tahmini_kisi_sayisi }}
-                {% for hata in form.tahmini_kisi_sayisi.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+                {% for hata in form.tahmini_kisi_sayisi.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
             </div>
-            <div class="col-6">
-                <label class="form-label">Tahmini Yaralı Sayısı</label>
+            <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Tahmini Yaralı Sayısı</label>
                 {{ form.tahmini_yarali_sayisi }}
-                {% for hata in form.tahmini_yarali_sayisi.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+                {% for hata in form.tahmini_yarali_sayisi.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
             </div>
         </div>
 
-        <div class="mb-4">
-            <label class="form-label">Fotoğraf (opsiyonel, doğrulayıcı sinyal olarak kullanılır)</label>
+        <div style="display:flex;flex-direction:column;gap:5px">
+            <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Fotoğraf <span style="text-transform:none;letter-spacing:0;color:var(--text-3)">(opsiyonel, doğrulayıcı sinyal olarak kullanılır)</span></label>
             {{ form.fotograf }}
-            {% for hata in form.fotograf.errors %}<div class="text-danger small">{{ hata }}</div>{% endfor %}
+            {% for hata in form.fotograf.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
         </div>
 
-        <button type="submit" class="btn btn-danger w-100">İhbarı Gönder</button>
+        <div style="display:flex;align-items:center;gap:var(--sp-4);border-top:1px solid var(--line);padding-top:var(--sp-5)">
+            <button type="submit" style="background:var(--crit);border:1px solid var(--crit);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;border-radius:var(--r-md);padding:12px 22px;cursor:pointer">İhbarı Gönder</button>
+        </div>
     </form>
 </div>
+
+<script>
+(function () {
+    const OLAY_TURLERI = [
+        { deger: 'deprem_hasari', etiket: 'Deprem Hasarı' },
+        { deger: 'yangin', etiket: 'Yangın' },
+        { deger: 'tibbi', etiket: 'Tıbbi' },
+        { deger: 'enkaz', etiket: 'Enkaz' },
+        { deger: 'diger', etiket: 'Diğer' },
+    ];
+    const secim = document.getElementById('id_olay_turu');
+    const kok = document.getElementById('olay-turu-butonlari');
+    if (!secim || !kok) return;
+
+    function butonlariCiz() {
+        kok.innerHTML = '';
+        OLAY_TURLERI.forEach(ty => {
+            const aktif = secim.value === ty.deger;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = ty.etiket;
+            btn.style.cssText = `background:${aktif ? 'var(--med-bg)' : 'var(--panel-2)'};border:1px solid ${aktif ? 'var(--med)' : 'var(--line)'};color:${aktif ? 'var(--med)' : 'var(--text-2)'};font-family:var(--sans);font-size:var(--fs-body);border-radius:var(--r-sm);padding:8px 14px;cursor:pointer`;
+            btn.addEventListener('click', () => { secim.value = ty.deger; butonlariCiz(); });
+            kok.appendChild(btn);
+        });
+    }
+    butonlariCiz();
+
+    // Mini harita: tıklanan noktayı lat/lng inputlarına yazar.
+    const latInput = document.getElementById('id_lat');
+    const lngInput = document.getElementById('id_lng');
+    const haritaEl = document.getElementById('ihbar-mini-harita');
+    if (haritaEl && window.L) {
+        const baslangicLat = parseFloat(latInput.value) || 39.0;
+        const baslangicLng = parseFloat(lngInput.value) || 35.0;
+        const mini = L.map('ihbar-mini-harita').setView([baslangicLat, baslangicLng], latInput.value ? 12 : 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(mini);
+        let marker = (latInput.value && lngInput.value)
+            ? L.marker([baslangicLat, baslangicLng]).addTo(mini)
+            : null;
+        mini.on('click', (e) => {
+            latInput.value = e.latlng.lat.toFixed(5);
+            lngInput.value = e.latlng.lng.toFixed(5);
+            if (marker) { marker.setLatLng(e.latlng); } else { marker = L.marker(e.latlng).addTo(mini); }
+        });
+    }
+})();
+</script>

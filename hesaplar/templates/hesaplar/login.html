@@ -1,0 +1,42 @@
+{% extends "base_standalone.html" %}
+{% block title %}Giriş Yap{% endblock %}
+
+{% block content %}
+<div style="display:flex;min-height:100vh">
+    {% include "hesaplar/_split_sol_panel.html" %}
+
+    <div style="flex:1 1 auto;background:var(--bg);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:var(--sp-6);position:relative">
+        <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:var(--sp-5)">
+            <div style="display:flex;flex-direction:column;gap:5px">
+                <h1 style="margin:0;font-size:22px;font-weight:600">Giriş Yap</h1>
+                <div style="font-size:var(--fs-sm);color:var(--text-3)">Devam etmek için hesap bilgilerinizi girin.</div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div style="background:var(--crit-bg);border:1px solid rgba(229,72,77,.4);color:var(--crit);border-radius:var(--r-md);padding:10px 14px;font-size:var(--fs-sm)">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <form method="post" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+                {% csrf_token %}
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Kullanıcı Adı / Telefon</label>
+                    <input type="text" name="username" autofocus required value="{{ form.username.value|default:'' }}"
+                           style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--text);font-family:var(--sans);font-size:15px;padding:13px 14px;width:100%;box-sizing:border-box">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Şifre</label>
+                    <input type="password" name="password" required
+                           style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--text);font-family:var(--sans);font-size:15px;padding:13px 14px;width:100%;box-sizing:border-box">
+                </div>
+                <input type="hidden" name="next" value="{{ next }}">
+                <button type="submit" style="background:var(--crit);border:1px solid var(--crit);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;border-radius:var(--r-md);padding:14px;cursor:pointer;width:100%">Giriş Yap</button>
+            </form>
+            <div style="text-align:center;font-size:var(--fs-sm);color:var(--text-3)">Hesabınız yok mu? <a href="{% url 'kayit' %}">Kayıt Ol</a></div>
+        </div>
+
+        <div style="position:absolute;bottom:var(--sp-5);right:var(--sp-5);font-size:var(--fs-xs);color:var(--text-3)">
+            Demo: <code style="color:var(--text-2)">koordinator1</code> · <code style="color:var(--text-2)">saha1</code> · <code style="color:var(--text-2)">5551112233</code> — şifre <code style="color:var(--text-2)">demo1234</code>
+        </div>
+    </div>
+</div>
+{% endblock %}

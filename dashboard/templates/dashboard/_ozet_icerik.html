@@ -1,78 +1,135 @@
 {% load static %}
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="card kart-vurgu shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small">Toplam İhbar</div>
-                <div class="fs-3 fw-bold">{{ toplam_ihbar_sayisi }}</div>
-            </div>
-        </div>
+<div style="display:flex;flex-direction:column;gap:var(--sp-5)">
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-4)">
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Toplam İhbar</div>
+      <div style="font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;line-height:1">{{ toplam_ihbar_sayisi }}</div>
+      <div style="height:2px;background:var(--line-soft)"><div style="width:100%;height:2px;background:var(--text-3)"></div></div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="card shadow-sm" style="border-left: 4px solid #dc3545;">
-            <div class="card-body">
-                <div class="text-muted small">Aktif Olay Kümesi</div>
-                <div class="fs-3 fw-bold">{{ aktif_kume_sayisi }}</div>
-            </div>
-        </div>
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Aktif Olay Kümesi</div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;line-height:1;color:var(--crit)">{{ aktif_kume_sayisi }}</div>
+        <div style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">{{ kritik_kume_sayisi }} kritik</div>
+      </div>
+      <div style="height:2px;background:var(--line-soft)"><div style="width:{% widthratio kritik_kume_sayisi aktif_kume_sayisi|default_if_none:1|default:1 100 %}%;height:2px;background:var(--crit)"></div></div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="card shadow-sm" style="border-left: 4px solid #fd7e14;">
-            <div class="card-body">
-                <div class="text-muted small">Doğrulama Bekleyen</div>
-                <div class="fs-3 fw-bold">{{ dogrulaniyor_sayisi }}</div>
-            </div>
-        </div>
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Doğrulama Bekleyen</div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;line-height:1;color:var(--high)">{{ dogrulaniyor_sayisi }}</div>
+        <div style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">{% if en_eski_dogrulama_dakika is not None %}en eski {{ en_eski_dogrulama_dakika }} dk{% else %}—{% endif %}</div>
+      </div>
+      <div style="height:2px;background:var(--line-soft)"><div style="width:{% widthratio dogrulaniyor_sayisi aktif_kume_sayisi|default_if_none:1|default:1 100 %}%;height:2px;background:var(--high)"></div></div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="card shadow-sm" style="border-left: 4px solid #198754;">
-            <div class="card-body">
-                <div class="text-muted small">Boşta Ekip</div>
-                <div class="fs-3 fw-bold">{{ bosta_ekip_sayisi }} / {{ toplam_ekip_sayisi }}</div>
-            </div>
-        </div>
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Boşta Ekip</div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;line-height:1"><span style="color:var(--low)">{{ bosta_ekip_sayisi }}</span><span style="color:var(--text-3)">/{{ toplam_ekip_sayisi }}</span></div>
+        <div style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">{{ gorevde_ekip_sayisi }} görevde</div>
+      </div>
+      <div style="height:2px;background:var(--line-soft)"><div style="width:{% widthratio bosta_ekip_sayisi toplam_ekip_sayisi|default_if_none:1|default:1 100 %}%;height:2px;background:var(--low)"></div></div>
     </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--sp-4);align-items:start">
+
+    <section style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line)">
+        <div style="display:flex;align-items:center;gap:var(--sp-3)">
+          <h1 style="margin:0;font-size:var(--fs-h1);font-weight:600;letter-spacing:-.01em;white-space:nowrap">En Kritik Olaylar</h1>
+          <span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3);border:1px solid var(--line);border-radius:var(--r-sm);padding:3px 7px;white-space:nowrap">ÖNCELİK SKORUNA GÖRE</span>
+        </div>
+        <a href="{% url 'olaylar:harita' %}" style="font-size:var(--fs-sm);color:var(--text-2);background:var(--panel-3);border:1px solid var(--line);border-radius:var(--r-sm);padding:5px 11px">Haritada Gör</a>
+      </div>
+
+      <div style="overflow-x:auto">
+      <div style="min-width:900px">
+      <div style="display:grid;grid-template-columns:88px minmax(140px,1fr) 108px 96px 168px 96px 132px 84px;align-items:center;gap:var(--sp-3);padding:10px var(--sp-5);border-bottom:1px solid var(--line);background:var(--panel-2);font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">
+        <div>#</div><div>Konum</div><div>Öncelik</div><div>Güven</div><div>Durum</div><div style="text-align:right">İhbar</div><div>Atanan Ekip</div><div></div>
+      </div>
+
+      {% for kume in kritik_kumeler %}
+      {% with ilk_ihbar=kume.ihbarlar.first %}
+      <div style="display:grid;grid-template-columns:88px minmax(140px,1fr) 108px 96px 168px 96px 132px 84px;align-items:center;gap:var(--sp-3);padding:12px var(--sp-5);border-bottom:1px solid var(--line-soft)">
+        <div style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">#{{ kume.id }}</div>
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+          <div style="font-size:var(--fs-body);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ilk_ihbar.get_olay_turu_display|default:"—" }}</div>
+          <div style="font-size:var(--fs-xs);color:var(--text-3);font-family:var(--mono)">{{ kume.merkez_lat|floatformat:3 }}, {{ kume.merkez_lng|floatformat:3 }}</div>
+        </div>
+        <div>
+          <span style="display:inline-flex;align-items:center;gap:6px;background:var(--{{ kume.oncelik_renk_kod }}-bg);border:1px solid var(--{{ kume.oncelik_renk_kod }});border-radius:var(--r-sm);padding:4px 8px">
+            <span style="font-family:var(--mono);font-size:var(--fs-body);font-weight:600;color:var(--{{ kume.oncelik_renk_kod }});line-height:1">{{ kume.oncelik_skoru }}</span>
+          </span>
+        </div>
+        <div style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">{{ kume.guven_skoru }}</div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--{{ kume.oncelik_renk_kod }})"></span>
+          <span style="font-size:var(--fs-sm);color:var(--text-2)">{{ kume.get_durum_display }}</span>
+        </div>
+        <div style="font-family:var(--mono);font-size:var(--fs-body);text-align:right">{{ kume.ihbarlar.count }}</div>
+        <div style="font-family:var(--mono);font-size:var(--fs-sm);color:{% if kume.atanan_ekip %}var(--text-2){% else %}var(--text-3){% endif %}">{{ kume.atanan_ekip.ad|default:"—" }}</div>
+        <div style="text-align:right">
+          {% if ilk_ihbar %}
+          <a href="{% url 'ihbarlar:detay' ilk_ihbar.id %}" style="display:inline-block;background:var(--panel-3);border:1px solid var(--line);color:var(--text);font-family:var(--sans);font-size:var(--fs-sm);border-radius:var(--r-sm);padding:5px 10px">Detay</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div style="padding:var(--sp-6) var(--sp-5);text-align:center;color:var(--text-3)">Henüz aktif bir olay kümesi yok.</div>
+      {% endfor %}
+      </div>
+      </div>
+    </section>
+
+    <aside style="display:flex;flex-direction:column;gap:var(--sp-4)">
+      <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-4)">
+        <div style="font-size:var(--fs-h2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)">Öncelik Eşikleri</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:2px;background:var(--crit)"></span><span style="font-size:var(--fs-body);flex:1">Kritik</span><span style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">80–100</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:2px;background:var(--high)"></span><span style="font-size:var(--fs-body);flex:1">Yüksek</span><span style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">60–79</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:2px;background:var(--med)"></span><span style="font-size:var(--fs-body);flex:1">Orta</span><span style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">40–59</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:2px;background:var(--low)"></span><span style="font-size:var(--fs-body);flex:1">Düşük</span><span style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">0–39</span></div>
+        </div>
+      </div>
+
+      <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-4)">
+        <div style="font-size:var(--fs-h2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)">Sistem Durumu</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:var(--fs-sm)">
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">WebSocket</span><span id="sistem-durum-ws" style="font-family:var(--mono);color:var(--text-3)">…</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">Son veri akışı</span><span style="font-family:var(--mono);color:var(--text)">{% if son_guncellenen_kume %}{{ son_guncellenen_kume.guncellenme_zamani|timesince }} önce{% else %}—{% endif %}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">Kümeleme yarıçapı</span><span style="font-family:var(--mono);color:var(--text)">{{ kumeleme_yaricapi }} m</span></div>
+        </div>
+      </div>
+
+      <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-3)">
+        <div style="font-size:var(--fs-h2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)">Son İhbarlar</div>
+        {% for ihbar in son_ihbarlar %}
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-soft)">
+          <span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">{{ ihbar.olusturulma_zamani|date:"H:i" }}</span>
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--{{ ihbar.olay_kumesi.oncelik_renk_kod|default:"text-3" }})"></span>
+          <span style="font-size:var(--fs-sm);color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ihbar.get_olay_turu_display }}</span>
+        </div>
+        {% empty %}
+        <div style="color:var(--text-3);font-size:var(--fs-sm)">Henüz ihbar yok.</div>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span>En Kritik Olaylar (öncelik skoruna göre)</span>
-        <a href="{% url 'olaylar:harita' %}" class="btn btn-sm btn-outline-primary">Haritada Gör</a>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>#</th>
-                    <th>Öncelik</th>
-                    <th>Güven</th>
-                    <th>Durum</th>
-                    <th>İhbar Sayısı</th>
-                    <th>Atanan Ekip</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for kume in kritik_kumeler %}
-                <tr>
-                    <td>#{{ kume.id }}</td>
-                    <td><span class="badge text-bg-{{ kume.oncelik_renk }} skor-badge">{{ kume.oncelik_skoru }}</span></td>
-                    <td><span class="badge text-bg-secondary skor-badge">{{ kume.guven_skoru }}</span></td>
-                    <td>{{ kume.get_durum_display }}</td>
-                    <td>{{ kume.ihbarlar.count }}</td>
-                    <td>{{ kume.atanan_ekip.ad|default:"—" }}</td>
-                    <td>
-                        {% with ilk_ihbar=kume.ihbarlar.first %}
-                        {% if ilk_ihbar %}
-                        <a href="{% url 'ihbarlar:detay' ilk_ihbar.id %}" class="btn btn-sm btn-outline-secondary">Detay</a>
-                        {% endif %}
-                        {% endwith %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="7" class="text-center text-muted py-4">Henüz aktif bir olay kümesi yok.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+<script>
+    // Bu partial hem ilk sayfa yüklemesinde hem de WebSocket push'ında
+    // (hx-swap-oob) DOM'a giriyor; her ikisinde de WS durumunu güncelle.
+    (function () {
+        const el = document.getElementById('sistem-durum-ws');
+        if (!el) return;
+        if (window.__afetosWsBagli) {
+            el.textContent = 'BAĞLI'; el.style.color = 'var(--live)';
+        } else {
+            el.textContent = 'BAĞLANIYOR…';
+        }
+    })();
+</script>

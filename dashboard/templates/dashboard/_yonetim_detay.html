@@ -1,0 +1,76 @@
+<div id="yonetim-detay-panel" style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
+{% if sel %}
+    <div style="padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px">
+        <div style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">#{{ sel.id }} · {{ sel.olusturulma_zamani|timesince }} önce</div>
+        <div style="font-size:15px;font-weight:600">{{ sel.ihbarlar.first.get_olay_turu_display|default:"Bilinmiyor" }}</div>
+        <div style="font-size:var(--fs-sm);color:var(--text-2)">{{ sel.merkez_lat|floatformat:4 }}, {{ sel.merkez_lng|floatformat:4 }}</div>
+    </div>
+
+    <div style="padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-4);border-bottom:1px solid var(--line)">
+        <div style="display:flex;gap:var(--sp-3)">
+            <div style="flex:1;background:var(--{{ sel.oncelik_renk_kod }}-bg);border:1px solid var(--{{ sel.oncelik_renk_kod }});border-radius:var(--r-md);padding:10px 12px;display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--{{ sel.oncelik_renk_kod }})">Öncelik</span>
+                <span style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--{{ sel.oncelik_renk_kod }});line-height:1">{{ sel.oncelik_skoru }}</span>
+            </div>
+            <div style="flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Güven</span>
+                <span style="font-family:var(--mono);font-size:22px;font-weight:600;line-height:1">{{ sel.guven_skoru }}</span>
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:var(--fs-sm)">
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">İhbar sayısı</span><span style="font-family:var(--mono)">{{ sel.ihbarlar.count }}</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">Durum</span><span>{{ sel.get_durum_display }}</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">Atanan ekip</span><span style="font-family:var(--mono)">{{ sel.atanan_ekip.ad|default:"—" }}</span></div>
+        </div>
+    </div>
+
+    <div style="padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-3);border-bottom:1px solid var(--line)">
+        <div style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Durum Güncelle</div>
+        <form hx-post="{% url 'dashboard:kume_durum_guncelle' sel.id %}"
+              hx-target="#yonetim-detay-panel" hx-swap="outerHTML">
+            {% csrf_token %}
+            <select name="durum" class="form-select" style="width:100%" onchange="this.form.requestSubmit()">
+                {% for deger, etiket in durum_secenekleri %}
+                <option value="{{ deger }}" {% if deger == sel.durum %}selected{% endif %}>{{ etiket }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div style="padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-3)">
+        <div style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Sistem Önerisi</div>
+        {% if onerilen_ekip %}
+        <div style="display:flex;align-items:center;gap:9px">
+            <span style="font-family:var(--mono);font-size:var(--fs-body);font-weight:600;color:var(--med)">★ {{ onerilen_ekip.ad }}</span>
+            <span style="font-size:var(--fs-sm);color:var(--text-2)">{{ onerilen_ekip.get_tur_display }}</span>
+        </div>
+        <div style="font-size:var(--fs-sm);color:var(--text-2);line-height:1.5">{{ oneri_sebebi }}</div>
+        <form hx-post="{% url 'dashboard:kume_ekip_ata' sel.id %}"
+              hx-target="#yonetim-detay-panel" hx-swap="outerHTML">
+            {% csrf_token %}
+            <input type="hidden" name="ekip_id" value="{{ onerilen_ekip.id }}">
+            <button type="submit" style="background:var(--med);border:1px solid var(--med);color:#fff;font-family:var(--sans);font-size:var(--fs-body);font-weight:500;border-radius:var(--r-md);padding:10px 14px;cursor:pointer;margin-top:var(--sp-1);width:100%">Öneriyi Uygula</button>
+        </form>
+        {% else %}
+        <div style="font-size:var(--fs-sm);color:var(--text-2);line-height:1.5">{{ oneri_sebebi|default:"Öneri hesaplanamadı." }}</div>
+        {% endif %}
+
+        <div style="height:1px;background:var(--line);margin:var(--sp-1) 0"></div>
+
+        <div style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Manuel Ekip Ata</div>
+        <form hx-post="{% url 'dashboard:kume_ekip_ata' sel.id %}"
+              hx-target="#yonetim-detay-panel" hx-swap="outerHTML" style="display:flex;gap:var(--sp-2)">
+            {% csrf_token %}
+            <select name="ekip_id" class="form-select" style="width:100%">
+                <option value="">— Ekip seç —</option>
+                {% for ekip in ekipler_tumu %}
+                <option value="{{ ekip.id }}" {% if sel.atanan_ekip_id == ekip.id %}selected{% endif %}>{{ ekip.ad }} ({{ ekip.get_tur_display }}, {{ ekip.get_durum_display }})</option>
+                {% endfor %}
+            </select>
+            <button type="submit" style="background:var(--panel-3);border:1px solid var(--line);color:var(--text);font-family:var(--sans);font-size:var(--fs-sm);border-radius:var(--r-sm);padding:8px 14px;cursor:pointer;white-space:nowrap">Ata</button>
+        </form>
+    </div>
+{% else %}
+    <div style="padding:var(--sp-6) var(--sp-5);text-align:center;color:var(--text-3)">Soldaki listeden bir olay seçin.</div>
+{% endif %}
+</div>

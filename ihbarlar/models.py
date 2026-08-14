@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -42,6 +43,18 @@ class Ihbar(models.Model):
         on_delete=models.SET_NULL,
         related_name='ihbarlar',
         verbose_name='Olay Kümesi',
+    )
+
+    # İhbarı oluşturan giriş yapmış kullanıcı (Vatandaş Paneli üzerinden
+    # gönderildiyse dolu olur). Operatör/koordinatör "İhbar Oluştur"
+    # formundan girilen ihbarlarda boş kalabilir (null=True).
+    bildiren = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='ihbarlar',
+        verbose_name='Bildiren Kullanıcı',
     )
 
     class Meta:

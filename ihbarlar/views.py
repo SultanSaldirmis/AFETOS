@@ -1,9 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from dashboard.realtime import guncelleme_yayinla
 from ekipler.models import Ekip
 from ekipler.services import EkipAday, en_uygun_ekibi_oner
+from hesaplar.decorators import personel_gerekli
 from olaylar.scoring import dogrulama_gerekli_mi
 
 from .forms import IhbarForm
@@ -11,6 +13,7 @@ from .models import Ihbar
 from .services import ihbari_kumeye_ata
 
 
+@personel_gerekli
 def olustur(request):
     """
     Yeni ihbar oluşturma sayfası (htmx ile gönderilir). Kayıt başarılıysa
@@ -42,10 +45,15 @@ def olustur(request):
     return render(request, 'ihbarlar/olustur.html', {'form': form})
 
 
+@personel_gerekli
 def detay(request, ihbar_id):
     """
     İhbar detay sayfası: ihbar bilgileri + (varsa) bağlı olduğu olay
     kümesinin güven/öncelik skoru, durumu ve önerilen ekip.
+
+    Operatör/koordinatör sayfasıdır (Ana Panel, Harita, Yönetim'deki
+    "Detay" linklerinden ulaşılır); vatandaşlar kendi ihbarlarını
+    /vatandas/ üzerinden görür, bu sayfayı görmez.
     """
     ihbar = get_object_or_404(Ihbar, id=ihbar_id)
     kume = ihbar.olay_kumesi
@@ -67,3 +75,38 @@ def detay(request, ihbar_id):
         'dogrulama_gerekli': dogrulama_gerekli_mi(kume.guven_skoru) if kume else False,
     }
     return render(request, 'ihbarlar/detay.html', context)
+
+
+@login_required
+def vatandas(request):
+    """
+    Vatandaş Paneli: kullanıcının kendi bildirdiği ihbarların listesi +
+    yeni ihbar oluşturma formu. GET'te sadece bildiren=request.user olan
+    kayıtlar listelenir (başka vatandaşın ihbarı asla gösterilmez);
+    POST'ta yeni ihbara bildiren otomatik atanır.
+    """
+    if request.method == 'POST':
+        form = IhbarForm(request.POST, request.FILES)
+        if form.is_valid():
+            ihbar = form.save(commit=False)
+            ihbar.bildiren = request.user
+            ihbar.save()
+            ihbari_kumeye_ata(ihbar)
+            guncelleme_yayinla()
+
+            if request.headers.get('HX-Request'):
+                # htmx'e tam sayfa yönlendirmesi yaptırıyoruz (liste sekmesi
+                # de tazelensin diye tüm sayfa yeniden yüklenir).
+                response = render(request, 'ihbarlar/_yonlendiriliyor.html')
+                response['HX-Redirect'] = reverse('vatandas')
+                return response
+            return redirect('vatandas')
+
+        # Form geçersiz: htmx isteğiyse sadece form parçasını yeniden render et.
+        if request.headers.get('HX-Request'):
+            return render(request, 'ihbarlar/_vatandas_form.html', {'form': form})
+    else:
+        form = IhbarForm()
+
+    kendi_ihbarlarim = Ihbar.objects.filter(bildiren=request.user)
+    return render(request, 'ihbarlar/vatandas.html', {'form': form, 'ihbarlarim': kendi_ihbarlarim})

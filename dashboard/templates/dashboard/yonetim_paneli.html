@@ -2,41 +2,67 @@
 {% block title %}Yönetim Paneli{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Yönetim Paneli</h2>
-
-<form method="get" class="row g-2 mb-3 align-items-end">
-    <div class="col-auto">
-        <label class="form-label small text-muted mb-1">Duruma göre filtrele</label>
-        <select name="durum" class="form-select" onchange="this.form.submit()">
-            <option value="">Tümü</option>
-            {% for deger, etiket in durum_secenekleri %}
-            <option value="{{ deger }}" {% if deger == secili_durum %}selected{% endif %}>{{ etiket }}</option>
-            {% endfor %}
-        </select>
+<div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+    <div style="display:flex;align-items:center;gap:var(--sp-3)">
+        <h1 style="margin:0;font-size:var(--fs-h1);font-weight:600">Yönetim Paneli</h1>
+        <span style="font-family:var(--mono);font-size:var(--fs-xs);font-weight:600;letter-spacing:.1em;color:var(--high);background:var(--high-bg);border:1px solid rgba(240,138,36,.4);border-radius:var(--r-sm);padding:3px 8px">YÖNETİCİ</span>
     </div>
-</form>
 
-<div class="card shadow-sm">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>#</th>
-                    <th>Öncelik</th>
-                    <th>Güven</th>
-                    <th>İhbar Sayısı</th>
-                    <th>Durum</th>
-                    <th>Ekip Ata</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for kume in kumeler %}
-                    {% include "dashboard/_kume_satiri.html" %}
-                {% empty %}
-                <tr><td colspan="6" class="text-center text-muted py-4">Kayıt bulunamadı.</td></tr>
+    <form method="get" style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--sp-4)">
+        <div style="display:flex;flex-direction:column;gap:5px">
+            <span style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Durum</span>
+            <select name="durum" class="form-select" style="min-width:180px" onchange="this.form.submit()">
+                <option value="">Tümü</option>
+                {% for deger, etiket in durum_secenekleri %}
+                <option value="{{ deger }}" {% if deger == secili_durum %}selected{% endif %}>{{ etiket }}</option>
                 {% endfor %}
-            </tbody>
-        </table>
+            </select>
+        </div>
+        <div style="display:flex;gap:var(--sp-2)">
+            <button type="submit" style="background:var(--panel-3);border:1px solid var(--line);color:var(--text);font-family:var(--sans);font-size:var(--fs-body);border-radius:var(--r-sm);padding:9px 16px;cursor:pointer">Uygula</button>
+            <a href="{% url 'dashboard:yonetim_paneli' %}" style="display:inline-flex;align-items:center;background:transparent;border:1px solid var(--line);color:var(--text-2);font-family:var(--sans);font-size:var(--fs-body);border-radius:var(--r-sm);padding:9px 14px">Sıfırla</a>
+        </div>
+    </form>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--sp-4);align-items:start">
+        <section style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line)">
+                <div style="font-size:var(--fs-h2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)">Olay Kayıtları</div>
+                <div style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">{{ kumeler.count }} KAYIT</div>
+            </div>
+            <div style="overflow-x:auto">
+            <div style="min-width:760px">
+                <div style="display:grid;grid-template-columns:64px minmax(160px,1fr) 96px 88px 176px;align-items:center;gap:var(--sp-3);padding:10px var(--sp-5);border-bottom:1px solid var(--line);background:var(--panel-2);font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">
+                    <div>#</div><div>Konum</div><div>Öncelik</div><div>Güven</div><div>Durum</div>
+                </div>
+                {% for kume in kumeler %}
+                <div id="yonetim-satir-{{ kume.id }}"
+                     hx-get="{% url 'dashboard:kume_detay_partial' kume.id %}"
+                     hx-target="#yonetim-detay-panel" hx-swap="outerHTML"
+                     style="display:grid;grid-template-columns:64px minmax(160px,1fr) 96px 88px 176px;align-items:center;gap:var(--sp-3);padding:12px var(--sp-5);border-bottom:1px solid var(--line-soft);cursor:pointer;background:{% if sel.id == kume.id %}var(--panel-2){% else %}transparent{% endif %};border-left:2px solid {% if sel.id == kume.id %}var(--med){% else %}transparent{% endif %}">
+                    <div style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">#{{ kume.id }}</div>
+                    <div style="min-width:0">
+                        <div style="font-size:var(--fs-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ kume.ihbarlar.first.get_olay_turu_display|default:"—" }}</div>
+                        <div style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">{{ kume.olusturulma_zamani|timesince }} önce</div>
+                    </div>
+                    <div>
+                        <span style="display:inline-flex;align-items:center;gap:6px;background:var(--{{ kume.oncelik_renk_kod }}-bg);border:1px solid var(--{{ kume.oncelik_renk_kod }});border-radius:var(--r-sm);padding:4px 8px">
+                            <span style="font-family:var(--mono);font-size:var(--fs-body);font-weight:600;color:var(--{{ kume.oncelik_renk_kod }});line-height:1">{{ kume.oncelik_skoru }}</span>
+                        </span>
+                    </div>
+                    <div style="font-family:var(--mono);font-size:var(--fs-sm);color:var(--text-2)">{{ kume.guven_skoru }}</div>
+                    <div style="font-size:var(--fs-sm);color:var(--text-2)">{{ kume.get_durum_display }}</div>
+                </div>
+                {% empty %}
+                <div style="padding:var(--sp-6) var(--sp-5);text-align:center;color:var(--text-3)">Kayıt bulunamadı.</div>
+                {% endfor %}
+            </div>
+            </div>
+        </section>
+
+        <aside>
+            {% include "dashboard/_yonetim_detay.html" %}
+        </aside>
     </div>
 </div>
 {% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base_standalone.html" %}
+{% block title %}Kayıt Ol{% endblock %}
+
+{% block content %}
+<div style="display:flex;min-height:100vh">
+    {% include "hesaplar/_split_sol_panel.html" %}
+
+    <div style="flex:1 1 auto;background:var(--bg);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:var(--sp-6)">
+        <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:var(--sp-5)">
+            <div style="display:flex;flex-direction:column;gap:5px">
+                <h1 style="margin:0;font-size:22px;font-weight:600">Kayıt Ol</h1>
+                <div style="font-size:var(--fs-sm);color:var(--text-3)">Vatandaş hesabı oluşturun.</div>
+            </div>
+
+            <form method="post" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="hata-mesaji" style="background:var(--crit-bg);border:1px solid rgba(229,72,77,.4);border-radius:var(--r-md);padding:10px 14px;margin:0">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">{{ form.ad_soyad.label }}</label>
+                    {{ form.ad_soyad }}
+                    {% for hata in form.ad_soyad.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">{{ form.telefon.label }}</label>
+                    {{ form.telefon }}
+                    {% for hata in form.telefon.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">{{ form.sifre.label }}</label>
+                    {{ form.sifre }}
+                    {% for hata in form.sifre.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">{{ form.sifre_tekrar.label }}</label>
+                    {{ form.sifre_tekrar }}
+                    {% for hata in form.sifre_tekrar.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+                </div>
+
+                <button type="submit" style="background:var(--crit);border:1px solid var(--crit);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;border-radius:var(--r-md);padding:14px;cursor:pointer;width:100%">Kayıt Ol</button>
+            </form>
+            <div style="text-align:center;font-size:var(--fs-sm);color:var(--text-3)">Zaten hesabınız var mı? <a href="{% url 'login' %}">Giriş Yap</a></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

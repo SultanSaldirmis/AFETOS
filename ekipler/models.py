@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -37,6 +38,18 @@ class Ekip(models.Model):
     )
 
     olusturulma_zamani = models.DateTimeField(auto_now_add=True)
+
+    # Bu ekibe sahada karşılık gelen giriş yapabilen kullanıcı (varsa).
+    # "Saha Ekip Üyesi" rolü, request.user.ekip üzerinden SADECE kendi
+    # ekibinin verisine erişebilir (bkz. views.gorevim).
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='ekip',
+        verbose_name='Bağlı Kullanıcı',
+    )
 
     class Meta:
         verbose_name = 'Ekip'

@@ -21,6 +21,18 @@ sayılarla DEĞİL):
   - **Küme A** (Kahramanmaraş merkez, enkaz, 4 tutarlı ihbar) → yüksek güven (~91), orta-yüksek öncelik (~68)
   - **Küme B** (Kahramanmaraş, tıbbi, 2 ihbar) → orta güven (~68)
   - **Küme C** (Hatay, yangın, 1 doğrulanmamış ihbar) → düşük güven (~47), **silinmedi**, "Doğrulanıyor" durumunda
+- **5 rol bazlı test kullanıcısı** (tümünün şifresi `demo1234`):
+
+| Kullanıcı adı | Rol | Girince nereye gider |
+|---|---|---|
+| `koordinator1` | Yönetici/Koordinatör (`is_staff=True`) | Ana Panel (`/`) — tüm sayfalara erişir |
+| `saha1` | Saha Ekip Üyesi (AFAD Arama Kurtarma-1'e bağlı) | Görevim (`/gorevim/`) |
+| `saha2` | Saha Ekip Üyesi (Sağlık Ekibi-1'e bağlı) | Görevim (`/gorevim/`) |
+| `5551112233` | Vatandaş (Küme A'daki ilk ihbarı bildirmiş) | Vatandaş Paneli (`/vatandas/`) |
+| `5551112244` | Vatandaş | Vatandaş Paneli (`/vatandas/`) |
+
+Aşağıdaki demo adımları **koordinatör olarak giriş yapmayı** varsayar
+(`http://localhost:8000/login/` → `koordinator1` / `demo1234`).
 
 > Not: Yeni açılan bir küme, ilk ihbarında genelde düşük güvenle başladığı
 > için sistem onu otomatik "Doğrulanıyor" durumuna alır. Bu durum

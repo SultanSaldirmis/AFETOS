@@ -1,0 +1,125 @@
+<div id="vatandas-form-wrapper">
+    <button type="button" id="gps-btn" style="background:var(--med);border:1px solid var(--med);color:#fff;font-family:var(--sans);font-size:16px;font-weight:600;border-radius:var(--r-md);padding:16px;cursor:pointer;width:100%;margin-bottom:var(--sp-4)">📍 Konumumu Kullan</button>
+
+    <form hx-post="{% url 'vatandas' %}" hx-encoding="multipart/form-data"
+          hx-target="#vatandas-form-wrapper" hx-swap="outerHTML"
+          style="display:flex;flex-direction:column;gap:var(--sp-4)">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="hata-mesaji" style="background:var(--crit-bg);border:1px solid rgba(229,72,77,.4);border-radius:var(--r-md);padding:10px 14px;margin:0">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Olay Türü</label>
+            <div id="olay-turu-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2)"></div>
+            <div style="display:none">{{ form.olay_turu }}</div>
+            {% for hata in form.olay_turu.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+        </div>
+
+        <div style="display:none">{{ form.lat }}{{ form.lng }}</div>
+        <div id="konum-bilgisi" style="font-size:var(--fs-xs);color:var(--text-3)">
+            {% if form.lat.value and form.lng.value %}Konum: {{ form.lat.value }}, {{ form.lng.value }}{% else %}Konum henüz alınmadı — "Konumumu Kullan"a bas.{% endif %}
+        </div>
+        {% for hata in form.lat.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+        {% for hata in form.lng.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-2);align-items:center">
+                <span style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Kişi Sayısı</span>
+                <div style="display:flex;align-items:center;gap:var(--sp-3)">
+                    <button type="button" onclick="vatandasSayacDegistir('{{ form.tahmini_kisi_sayisi.id_for_label }}', -1)" style="width:38px;height:38px;background:var(--panel-3);border:1px solid var(--line);color:var(--text);font-size:18px;border-radius:var(--r-sm);cursor:pointer">−</button>
+                    <span id="{{ form.tahmini_kisi_sayisi.id_for_label }}-gosterim" style="font-family:var(--mono);font-size:22px;font-weight:600;min-width:26px;text-align:center">{{ form.tahmini_kisi_sayisi.value|default:0 }}</span>
+                    <button type="button" onclick="vatandasSayacDegistir('{{ form.tahmini_kisi_sayisi.id_for_label }}', 1)" style="width:38px;height:38px;background:var(--panel-3);border:1px solid var(--line);color:var(--text);font-size:18px;border-radius:var(--r-sm);cursor:pointer">+</button>
+                </div>
+                <div style="display:none">{{ form.tahmini_kisi_sayisi }}</div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-2);align-items:center">
+                <span style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Yaralı Sayısı</span>
+                <div style="display:flex;align-items:center;gap:var(--sp-3)">
+                    <button type="button" onclick="vatandasSayacDegistir('{{ form.tahmini_yarali_sayisi.id_for_label }}', -1)" style="width:38px;height:38px;background:var(--panel-3);border:1px solid var(--line);color:var(--text);font-size:18px;border-radius:var(--r-sm);cursor:pointer">−</button>
+                    <span id="{{ form.tahmini_yarali_sayisi.id_for_label }}-gosterim" style="font-family:var(--mono);font-size:22px;font-weight:600;min-width:26px;text-align:center;color:var(--high)">{{ form.tahmini_yarali_sayisi.value|default:0 }}</span>
+                    <button type="button" onclick="vatandasSayacDegistir('{{ form.tahmini_yarali_sayisi.id_for_label }}', 1)" style="width:38px;height:38px;background:var(--panel-3);border:1px solid var(--line);color:var(--text);font-size:18px;border-radius:var(--r-sm);cursor:pointer">+</button>
+                </div>
+                <div style="display:none">{{ form.tahmini_yarali_sayisi }}</div>
+            </div>
+        </div>
+        {% for hata in form.tahmini_kisi_sayisi.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+        {% for hata in form.tahmini_yarali_sayisi.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+
+        <div style="display:flex;flex-direction:column;gap:5px">
+            <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Kısa Açıklama</label>
+            {{ form.aciklama }}
+            {% for hata in form.aciklama.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+        </div>
+
+        <label for="{{ form.fotograf.id_for_label }}" id="fotograf-etiketi" style="background:var(--panel-2);border:1px dashed var(--line);color:var(--text-2);font-family:var(--sans);font-size:var(--fs-body);border-radius:var(--r-md);padding:16px;cursor:pointer;width:100%;text-align:center;display:block;box-sizing:border-box">📷 Fotoğraf Ekle</label>
+        <div style="display:none">{{ form.fotograf }}</div>
+        {% for hata in form.fotograf.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+
+        <div style="position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:var(--sp-4);margin:0 calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4))">
+            <button type="submit" style="background:var(--crit);border:1px solid var(--crit);color:#fff;font-family:var(--sans);font-size:17px;font-weight:700;letter-spacing:.03em;border-radius:var(--r-md);padding:18px;cursor:pointer;width:100%">İHBARI GÖNDER</button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function () {
+    const OLAY_TURLERI = [
+        { deger: 'deprem_hasari', etiket: 'Deprem Hasarı' },
+        { deger: 'yangin', etiket: 'Yangın' },
+        { deger: 'tibbi', etiket: 'Tıbbi' },
+        { deger: 'enkaz', etiket: 'Enkaz' },
+        { deger: 'diger', etiket: 'Diğer' },
+    ];
+    const secim = document.getElementById('id_olay_turu');
+    const kok = document.getElementById('olay-turu-grid');
+    if (!secim || !kok) return;
+
+    function butonlariCiz() {
+        kok.innerHTML = '';
+        OLAY_TURLERI.forEach(ty => {
+            const aktif = secim.value === ty.deger;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = ty.etiket;
+            btn.style.cssText = `background:${aktif ? 'var(--med-bg)' : 'var(--panel-2)'};border:1px solid ${aktif ? 'var(--med)' : 'var(--line)'};color:${aktif ? 'var(--med)' : 'var(--text-2)'};font-family:var(--sans);font-size:15px;font-weight:500;border-radius:var(--r-md);padding:20px 12px;cursor:pointer`;
+            btn.addEventListener('click', () => { secim.value = ty.deger; butonlariCiz(); });
+            kok.appendChild(btn);
+        });
+    }
+    butonlariCiz();
+
+    window.vatandasSayacDegistir = function (inputId, delta) {
+        const input = document.getElementById(inputId);
+        const gosterim = document.getElementById(inputId + '-gosterim');
+        const yeni = Math.max(0, (parseInt(input.value, 10) || 0) + delta);
+        input.value = yeni;
+        gosterim.textContent = yeni;
+    };
+
+    const gpsBtn = document.getElementById('gps-btn');
+    if (gpsBtn) {
+        gpsBtn.addEventListener('click', () => {
+            const bilgi = document.getElementById('konum-bilgisi');
+            if (!navigator.geolocation) { bilgi.textContent = 'Tarayıcınız konum özelliğini desteklemiyor.'; return; }
+            bilgi.textContent = 'Konum alınıyor…';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    document.getElementById('id_lat').value = pos.coords.latitude.toFixed(5);
+                    document.getElementById('id_lng').value = pos.coords.longitude.toFixed(5);
+                    bilgi.textContent = `Konum alındı: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                },
+                () => { bilgi.textContent = 'Konum alınamadı, izin verildiğinden emin olun.'; }
+            );
+        });
+    }
+
+    const fotografInput = document.getElementById('id_fotograf');
+    if (fotografInput) {
+        fotografInput.addEventListener('change', (e) => {
+            const etiket = document.getElementById('fotograf-etiketi');
+            etiket.textContent = e.target.files.length ? `📷 ${e.target.files[0].name}` : '📷 Fotoğraf Ekle';
+        });
+    }
+})();
+</script>

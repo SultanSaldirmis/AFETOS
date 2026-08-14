@@ -20,6 +20,7 @@ Kullanım:
     python manage.py seed_demo          # önce mevcut veriyi temizler, sonra tohumlar
     python manage.py seed_demo --ekle   # mevcut veriyi SİLMEDEN üzerine ekler
 """
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from ekipler.models import Ekip
@@ -27,36 +28,49 @@ from ihbarlar.models import Ihbar
 from ihbarlar.services import ihbari_kumeye_ata
 from olaylar.models import OlayKumesi
 
+User = get_user_model()
+
+# Tüm demo kullanıcıları için ortak, basit şifre (sadece yerel demo amaçlı).
+DEMO_SIFRE = 'demo1234'
+
 
 class Command(BaseCommand):
-    help = 'Demo senaryosu için örnek ekip ve afet olayı (ihbar/küme) verisi oluşturur.'
+    help = 'Demo senaryosu için örnek ekip, afet olayı (ihbar/küme) ve rol bazlı test kullanıcıları oluşturur.'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--ekle', action='store_true',
-            help='Mevcut İhbar/OlayKümesi/Ekip verisini SİLMEDEN üzerine ekler (varsayılan: önce temizler).',
+            help='Mevcut İhbar/OlayKümesi/Ekip/kullanıcı verisini SİLMEDEN üzerine ekler (varsayılan: önce temizler).',
         )
 
     def handle(self, *args, **options):
         if not options['ekle']:
-            self.stdout.write('Mevcut İhbar, OlayKümesi ve Ekip kayıtları temizleniyor...')
+            self.stdout.write('Mevcut İhbar, OlayKümesi, Ekip ve demo kullanıcıları temizleniyor...')
             Ihbar.objects.all().delete()
             OlayKumesi.objects.all().delete()
             Ekip.objects.all().delete()
+            User.objects.filter(username__in=self._demo_kullanici_adlari()).delete()
 
-        self._ekipleri_olustur()
+        ekipler = self._ekipleri_olustur()
         self._onceden_olusturulmus_olaylari_olustur()
+        self._kullanicilari_olustur(ekipler)
 
         self.stdout.write(self.style.SUCCESS(
             f'\nTamamlandı: {Ekip.objects.count()} ekip, '
             f'{OlayKumesi.objects.count()} olay kümesi, '
-            f'{Ihbar.objects.count()} ihbar oluşturuldu.\n'
+            f'{Ihbar.objects.count()} ihbar, '
+            f'{User.objects.filter(username__in=self._demo_kullanici_adlari()).count()} demo kullanıcısı oluşturuldu.\n'
+            f'Tüm demo kullanıcılarının şifresi: {DEMO_SIFRE}\n'
             'Demo akışı için DEMO.md dosyasına bakın.'
         ))
 
+    @staticmethod
+    def _demo_kullanici_adlari():
+        return ['koordinator1', 'saha1', 'saha2', '5551112233', '5551112244']
+
     def _ekipleri_olustur(self):
         """Kahramanmaraş/Hatay bölgesine dağılmış, farklı tür ve durumda örnek ekipler."""
-        ekipler = [
+        ekip_tanimlari = [
             # ad, tür, lat, lng, durum
             ('AFAD Arama Kurtarma-1', Ekip.Tur.ARAMA_KURTARMA, 37.5858, 36.9371, Ekip.Durum.BOSTA),
             ('Sağlık Ekibi-1', Ekip.Tur.SAGLIK, 37.5900, 36.9300, Ekip.Durum.BOSTA),
@@ -65,9 +79,12 @@ class Command(BaseCommand):
             ('Sağlık Ekibi-2', Ekip.Tur.SAGLIK, 37.6100, 36.9500, Ekip.Durum.GOREVDE),
             ('Arama Kurtarma-3', Ekip.Tur.ARAMA_KURTARMA, 37.8000, 38.2700, Ekip.Durum.YOLDA),
         ]
-        for ad, tur, lat, lng, durum in ekipler:
+        ekipler = [
             Ekip.objects.create(ad=ad, tur=tur, lat=lat, lng=lng, durum=durum)
+            for ad, tur, lat, lng, durum in ekip_tanimlari
+        ]
         self.stdout.write(f'  {len(ekipler)} ekip oluşturuldu.')
+        return ekipler
 
     def _onceden_olusturulmus_olaylari_olustur(self):
         """
@@ -114,3 +131,57 @@ class Command(BaseCommand):
 
         toplam_ihbar = len(kume_a_ihbarlari) + len(kume_b_ihbarlari) + 1
         self.stdout.write(f'  3 olay kümesi, {toplam_ihbar} ihbar oluşturuldu (gerçek skor algoritmasıyla).')
+
+    def _kullanicilari_olustur(self, ekipler):
+        """
+        3 rolü de temsil eden test kullanıcıları oluşturur:
+          - 1 koordinatör (is_staff=True)
+          - 2 saha ekip üyesi (mevcut Ekip kayıtlarının ilk ikisine bağlı)
+          - 2 vatandaş (ekip bağlantısı yok)
+        Tüm demo kullanıcılarının şifresi DEMO_SIFRE ('demo1234').
+        """
+        koordinator = User.objects.create_user(
+            username='koordinator1', password=DEMO_SIFRE, is_staff=True,
+            first_name='Koordinatör', last_name='Demo',
+        )
+
+        saha_kullanicilari = []
+        # İlk iki ekibi saha kullanıcılarına bağlıyoruz (Ekip.user OneToOne).
+        for i, (username, ad, soyad) in enumerate([
+            ('saha1', 'Saha', 'Bir'),
+            ('saha2', 'Saha', 'İki'),
+        ]):
+            kullanici = User.objects.create_user(
+                username=username, password=DEMO_SIFRE, is_staff=False,
+                first_name=ad, last_name=soyad,
+            )
+            if i < len(ekipler):
+                ekip = ekipler[i]
+                ekip.user = kullanici
+                ekip.save(update_fields=['user'])
+            saha_kullanicilari.append(kullanici)
+
+        vatandaslar = [
+            User.objects.create_user(
+                username=telefon, password=DEMO_SIFRE, is_staff=False,
+                first_name=ad, last_name=soyad,
+            )
+            for telefon, ad, soyad in [
+                ('5551112233', 'Vatandaş', 'Bir'),
+                ('5551112244', 'Vatandaş', 'İki'),
+            ]
+        ]
+
+        # Demo'da "vatandaş sadece kendi ihbarını görür" senaryosunu
+        # gösterebilmek için, önceden oluşturulmuş bir ihbarı ilk vatandaşa
+        # bildiren olarak bağlıyoruz.
+        ilk_ihbar = Ihbar.objects.order_by('id').first()
+        if ilk_ihbar is not None:
+            ilk_ihbar.bildiren = vatandaslar[0]
+            ilk_ihbar.save(update_fields=['bildiren'])
+
+        self.stdout.write(
+            f'  1 koordinatör ({koordinator.username}), '
+            f'{len(saha_kullanicilari)} saha ekip üyesi, '
+            f'{len(vatandaslar)} vatandaş kullanıcısı oluşturuldu.'
+        )
