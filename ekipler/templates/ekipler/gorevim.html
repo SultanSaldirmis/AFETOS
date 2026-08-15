@@ -3,18 +3,26 @@
 
 {% block content %}
 <div style="min-height:100vh;background:var(--bg);display:flex;flex-direction:column">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:var(--sp-4);border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5">
-        <div style="display:flex;flex-direction:column;gap:2px">
-            <div style="font-family:var(--mono);font-size:16px;font-weight:600;letter-spacing:.06em">{{ ekip.ad }}</div>
-            <div style="display:flex;align-items:center;gap:6px">
-                <span class="canli-nokta" style="width:6px;height:6px;border-radius:50%;background:var(--live)"></span>
-                <span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--live);letter-spacing:.1em">CANLI</span>
+    <div style="border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5">
+        <div style="max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4)">
+            <div style="display:flex;flex-direction:column;gap:2px">
+                <div style="font-family:var(--mono);font-size:16px;font-weight:600;letter-spacing:.06em">{{ ekip.ad }}</div>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <span class="canli-nokta" style="width:6px;height:6px;border-radius:50%;background:var(--live)"></span>
+                    <span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--live);letter-spacing:.1em">CANLI</span>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--sp-3)">
+                <div style="background:{{ rozet.bg }};border:1px solid {{ rozet.border }};border-radius:999px;padding:8px 14px;font-family:var(--mono);font-size:var(--fs-sm);font-weight:600;letter-spacing:.06em;color:{{ rozet.renk }}">{{ rozet.etiket }}</div>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" style="background:transparent;border:0;color:var(--text-3);font-family:var(--sans);font-size:var(--fs-sm);cursor:pointer;padding:0">Çıkış</button>
+                </form>
             </div>
         </div>
-        <div style="background:{{ rozet.bg }};border:1px solid {{ rozet.border }};border-radius:999px;padding:9px 16px;font-family:var(--mono);font-size:var(--fs-body);font-weight:600;letter-spacing:.06em;color:{{ rozet.renk }}">{{ rozet.etiket }}</div>
     </div>
 
-    <div style="padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-4);flex:1 1 auto">
+    <div style="max-width:640px;margin:0 auto;width:100%;box-sizing:border-box;padding:var(--sp-3) var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-4);flex:1 1 auto">
         {% if kume %}
         <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
             <div style="padding:var(--sp-5) var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3);border-bottom:1px solid var(--line)">
@@ -47,30 +55,46 @@
             Şu anda atanmış bir olayın yok.
         </div>
         {% endif %}
-
-        <a href="{% url 'gorevim' %}" style="text-align:center;background:transparent;border:1px solid var(--line);color:var(--text-2);font-family:var(--sans);font-size:var(--fs-sm);border-radius:var(--r-sm);padding:10px;text-decoration:none">Sayfayı Yenile</a>
     </div>
 
     {% if kume %}
-    <div style="position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-2)">
-        <form method="post" action="{% url 'gorevim_durum_guncelle' %}">
-            {% csrf_token %}
-            <input type="hidden" name="adim" value="yolda">
-            <button type="submit" {% if ekip.durum != 'bosta' and ekip.durum != 'yolda' %}disabled{% endif %}
-                    style="background:{% if ekip.durum == 'yolda' %}var(--panel-3){% else %}var(--high-bg){% endif %};border:1px solid {% if ekip.durum == 'yolda' %}var(--line){% else %}rgba(240,138,36,.4){% endif %};color:{% if ekip.durum == 'yolda' %}var(--text-3){% else %}var(--high){% endif %};font-family:var(--sans);font-size:17px;font-weight:600;border-radius:var(--r-md);padding:18px;cursor:pointer;width:100%">Yola Çıktım</button>
-        </form>
-        <form method="post" action="{% url 'gorevim_durum_guncelle' %}">
-            {% csrf_token %}
-            <input type="hidden" name="adim" value="sahadayim">
-            <button type="submit"
-                    style="background:{% if ekip.durum == 'gorevde' %}var(--panel-3){% else %}var(--med-bg){% endif %};border:1px solid {% if ekip.durum == 'gorevde' %}var(--line){% else %}rgba(62,139,214,.4){% endif %};color:{% if ekip.durum == 'gorevde' %}var(--text-3){% else %}var(--med){% endif %};font-family:var(--sans);font-size:17px;font-weight:600;border-radius:var(--r-md);padding:18px;cursor:pointer;width:100%">Sahadayım</button>
-        </form>
-        <form method="post" action="{% url 'gorevim_durum_guncelle' %}" onsubmit="return confirm('Bu olayı tamamlandı olarak işaretlemek istediğine emin misin?');">
-            {% csrf_token %}
-            <input type="hidden" name="adim" value="tamamlandi">
-            <button type="submit" style="background:var(--crit);border:1px solid var(--crit);color:#fff;font-family:var(--sans);font-size:17px;font-weight:600;border-radius:var(--r-md);padding:18px;cursor:pointer;width:100%">Tamamlandı</button>
-        </form>
+    <div style="position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line)">
+        <div style="max-width:640px;margin:0 auto;padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-2)">
+            <form method="post" action="{% url 'gorevim_durum_guncelle' %}">
+                {% csrf_token %}
+                <input type="hidden" name="adim" value="yolda">
+                <button type="submit" {% if not adim_durumlari.yolda.etkin %}disabled{% endif %}
+                        style="background:{{ adim_durumlari.yolda.bg }};border:1px solid {{ adim_durumlari.yolda.border }};color:{{ adim_durumlari.yolda.renk }};font-family:var(--sans);font-size:17px;font-weight:600;border-radius:var(--r-md);padding:18px;cursor:{% if adim_durumlari.yolda.etkin %}pointer{% else %}default{% endif %};width:100%">
+                    {% if adim_durumlari.yolda.durum == 'gecildi' %}✓ {% endif %}Yola Çıktım
+                </button>
+            </form>
+            <form method="post" action="{% url 'gorevim_durum_guncelle' %}">
+                {% csrf_token %}
+                <input type="hidden" name="adim" value="sahadayim">
+                <button type="submit" {% if not adim_durumlari.sahadayim.etkin %}disabled{% endif %}
+                        style="background:{{ adim_durumlari.sahadayim.bg }};border:1px solid {{ adim_durumlari.sahadayim.border }};color:{{ adim_durumlari.sahadayim.renk }};font-family:var(--sans);font-size:17px;font-weight:600;border-radius:var(--r-md);padding:18px;cursor:{% if adim_durumlari.sahadayim.etkin %}pointer{% else %}default{% endif %};width:100%">
+                    {% if adim_durumlari.sahadayim.durum == 'gecildi' %}✓ {% endif %}Sahadayım
+                </button>
+            </form>
+            <form method="post" action="{% url 'gorevim_durum_guncelle' %}" onsubmit="return confirm('Bu olayı tamamlandı olarak işaretlemek istediğine emin misin?');">
+                {% csrf_token %}
+                <input type="hidden" name="adim" value="tamamlandi">
+                <button type="submit" style="background:var(--crit);border:1px solid var(--crit);color:#fff;font-family:var(--sans);font-size:17px;font-weight:600;border-radius:var(--r-md);padding:18px;cursor:pointer;width:100%">Tamamlandı</button>
+            </form>
+        </div>
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Manuel "Sayfayı Yenile" linki yerine: aynı canlı WebSocket kanalını
+    // dinleyip (Ana Panel/Harita'nın kullandığı) herhangi bir güncelleme
+    // sinyalinde sayfayı otomatik tazeliyoruz — koordinatör başka bir
+    // ekip atarsa/durumu değiştirirse bu sayfa da kendiliğinden güncel kalır.
+    const semaVeHost = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+    const soket = new WebSocket(semaVeHost + '/ws/canli/');
+    soket.onmessage = () => { location.reload(); };
+</script>
 {% endblock %}

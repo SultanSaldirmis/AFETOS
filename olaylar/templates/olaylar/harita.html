@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load l10n %}
 {% block title %}Harita{% endblock %}
 
 {% block extra_head %}
@@ -39,6 +40,11 @@
                 <span class="harita-kontrol-btn aktif" data-katman="ekipler">Ekipler</span>
                 <span class="harita-kontrol-btn aktif" data-katman="deprem">Deprem</span>
             </div>
+            {% if ekip_filtre %}
+            <a href="{% url 'olaylar:harita' %}" style="display:flex;align-items:center;gap:7px;background:rgba(62,139,214,.16);border:1px solid rgba(62,139,214,.4);border-radius:999px;padding:6px 12px;color:var(--med);font-size:var(--fs-sm);text-decoration:none">
+                Filtre: {{ ekip_filtre.ad }} <span style="font-weight:700">×</span>
+            </a>
+            {% endif %}
         </div>
 
         <div style="position:absolute;top:var(--sp-4);right:var(--sp-4);z-index:600;width:216px;background:rgba(14,17,22,.94);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
@@ -51,9 +57,18 @@
             </div>
             <div style="height:1px;background:var(--line)"></div>
             <div style="display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:3px;background:var(--low)"></span><span style="font-size:var(--fs-sm)">Ekip · boşta</span></div>
-                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:3px;background:#5A6472"></span><span style="font-size:var(--fs-sm)">Ekip · meşgul</span></div>
-                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border:1.5px dashed var(--quake);transform:rotate(45deg)"></span><span style="font-size:var(--fs-sm)">Kandilli deprem</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:var(--low)"></span><span style="font-size:var(--fs-sm)">Ekip · boşta</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:var(--med)"></span><span style="font-size:var(--fs-sm)">Ekip · yolda</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:var(--crit)"></span><span style="font-size:var(--fs-sm)">Ekip · görevde</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;background:var(--text-2);clip-path:polygon(50% 0,100% 100%,0 100%)"></span><span style="font-size:var(--fs-sm)">Arama Kurtarma</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--panel)">+</span><span style="font-size:var(--fs-sm)">Sağlık</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;background:var(--text-2)"></span><span style="font-size:var(--fs-sm)">Lojistik</span></div>
+            </div>
+            <div style="height:1px;background:var(--line)"></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:14px;height:14px;border-radius:50%;border:2px solid var(--quake);display:flex;align-items:center;justify-content:center;font-size:7px;color:var(--quake);font-family:var(--mono)">M</span><span style="font-size:var(--fs-sm)">Kandilli deprem</span></div>
             </div>
         </div>
 
@@ -65,7 +80,20 @@
 {% block extra_scripts %}
 <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
 <script>
-    const harita = L.map('harita', { zoomControl: true }).setView([38.5, 35.5], 6);
+    // Ekipler sayfasındaki "Haritada gör" linkinden ?ekip=<id> ile
+    // gelinmiş olabilir — o zaman harita_veri de aynı filtreyle sorgulanır
+    // (sadece o ekip döner, olaylar hiç dönmez).
+    // ekip_filtre None iken "ekip_filtre.id" Django'da None DEĞİL boş string
+    // döner (template değişken çözümlemesi böyle) — bu yüzden default_if_none
+    // değil, boş/falsy değerleri de yakalayan "default" filtresi kullanılıyor.
+    const EKIP_FILTRE_ID = {{ ekip_filtre.id|default:"null"|unlocalize }};
+    const EKIP_FILTRE_LAT = {{ ekip_filtre.lat|default:"null"|unlocalize }};
+    const EKIP_FILTRE_LNG = {{ ekip_filtre.lng|default:"null"|unlocalize }};
+
+    const harita = L.map('harita', { zoomControl: true }).setView(
+        EKIP_FILTRE_ID ? [EKIP_FILTRE_LAT, EKIP_FILTRE_LNG] : [38.5, 35.5],
+        EKIP_FILTRE_ID ? 13 : 6
+    );
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap katkıda bulunanlar',
@@ -97,22 +125,38 @@
             iconSize: [18, 18],
         });
     }
-    function ekipIkonu(durum) {
-        const renk = durum === 'bosta' ? '#2F9E6E' : '#5A6472';
-        return L.divIcon({
-            className: '', html: `<div style="background:${renk};width:14px;height:14px;border-radius:3px;border:2px solid #0E1116;"></div>`,
-            iconSize: [14, 14],
-        });
+    // Ekip marker'ı: türe göre ŞEKİL (sağlık=daire+artı, arama kurtarma=
+    // üçgen, lojistik=kare) + duruma göre RENK (boşta yeşil, yolda mavi,
+    // görevde kırmızı). Şekil+renk kombinasyonu, Kandilli deprem
+    // ikonlarından (aşağıda) tamamen farklı bir görsel dilde.
+    const EKIP_DURUM_RENGI = { bosta: '#2F9E6E', yolda: '#3E8BD6', gorevde: '#E5484D' };
+
+    function ekipIkonu(tur, durum) {
+        const renk = EKIP_DURUM_RENGI[durum] || '#68737F';
+        const kenar = '2px solid #0E1116';
+        let icHtml;
+        if (tur === 'saglik') {
+            icHtml = `<div style="width:20px;height:20px;border-radius:50%;background:${renk};border:${kenar};display:flex;align-items:center;justify-content:center;color:#0E1116;font-weight:800;font-size:13px;line-height:1">+</div>`;
+        } else if (tur === 'arama_kurtarma') {
+            icHtml = `<div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:18px solid ${renk};filter:drop-shadow(0 0 0 #0E1116)"></div>`;
+        } else {
+            icHtml = `<div style="width:16px;height:16px;background:${renk};border:${kenar};border-radius:3px"></div>`;
+        }
+        return L.divIcon({ className: '', html: icHtml, iconSize: [20, 20], iconAnchor: [10, 10] });
     }
+
     // Kandilli deprem marker'ı: AFETOS'un kendi olay/ekip ikonlarından
-    // BİLEREK belirgin şekilde farklı — kırık/noktalı halka + büyüklük
-    // rakamı, theme.css'teki --quake (nötr gri) rengiyle. Bu veri AFETOS'un
-    // güven/öncelik skoruna asla girmez, sadece görsel referans katmanıdır.
+    // BİLEREK belirgin şekilde farklı — dolu olmayan (içi boş) bir daire,
+    // ortasında büyüklük rakamı, theme.css'teki --quake (nötr gri)
+    // rengiyle. Çap büyüklükle orantılı: M<3 küçük, M3–5 orta, M5+ büyük.
+    // Bu veri AFETOS'un güven/öncelik skoruna asla girmez, sadece görsel
+    // referans katmanıdır.
     function depremIkonu(buyukluk) {
-        const boyut = buyukluk >= 4 ? 30 : buyukluk >= 3 ? 24 : 18;
+        const boyut = buyukluk >= 5 ? 38 : buyukluk >= 3 ? 26 : 16;
+        const fontBoyutu = buyukluk >= 5 ? 12 : buyukluk >= 3 ? 10 : 8;
         return L.divIcon({
             className: '',
-            html: `<div style="width:${boyut}px;height:${boyut}px;border-radius:50%;border:2px dashed var(--quake);display:flex;align-items:center;justify-content:center;background:rgba(138,147,160,.12);font-family:var(--mono);font-size:${boyut > 24 ? 11 : 9}px;font-weight:600;color:var(--quake)">${buyukluk.toFixed(1)}</div>`,
+            html: `<div style="width:${boyut}px;height:${boyut}px;border-radius:50%;border:2px solid var(--quake);background:transparent;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:${fontBoyutu}px;font-weight:600;color:var(--quake)">M${buyukluk.toFixed(1)}</div>`,
             iconSize: [boyut, boyut],
             iconAnchor: [boyut / 2, boyut / 2],
         });
@@ -152,7 +196,8 @@
     }
 
     async function haritayiYukle() {
-        const yanit = await fetch("{% url 'olaylar:harita_veri' %}");
+        const url = "{% url 'olaylar:harita_veri' %}" + (EKIP_FILTRE_ID ? `?ekip=${EKIP_FILTRE_ID}` : '');
+        const yanit = await fetch(url);
         const veri = await yanit.json();
         sonVeri = veri;
 
@@ -172,7 +217,7 @@
 
         veri.ekipler.forEach(ekip => {
             const popup = `<strong>${ekip.ad}</strong><br>Tür: ${ekip.tur_gosterim}<br>Durum: ${ekip.durum_gosterim}`;
-            L.marker([ekip.lat, ekip.lng], { icon: ekipIkonu(ekip.durum) }).addTo(ekipKatmani).bindPopup(popup);
+            L.marker([ekip.lat, ekip.lng], { icon: ekipIkonu(ekip.tur, ekip.durum) }).addTo(ekipKatmani).bindPopup(popup);
         });
 
         listeyiCiz(veri);

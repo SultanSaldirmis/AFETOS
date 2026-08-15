@@ -34,6 +34,31 @@ def liste(request):
     return render(request, 'ekipler/liste.html', context)
 
 
+# Görevim ilerleme çubuğundaki adım sırası. 'tamamlandi' burada YOK çünkü
+# o bir Ekip.durum değeri değil — kümeyi kapatıp ekibi boşta'ya döndüren
+# ayrı bir işlem (bkz. gorevim_durum_guncelle).
+_GOREV_ADIM_SIRASI = {Ekip.Durum.YOLDA: 0, Ekip.Durum.GOREVDE: 1}
+
+
+def _gorev_adim_durumlari(ekip_durum):
+    """
+    "Yola Çıktım → Sahadayım" ilerleme göstergesinin her adımı için görsel
+    durumu (geçildi/mevcut/beklemede) ve buna karşılık gelen renk/etkin
+    bilgisini hesaplar. Şablonda karmaşık iç içe koşullardan kaçınmak için
+    bu mantık burada, Python tarafında tutulur.
+    """
+    mevcut_index = _GOREV_ADIM_SIRASI.get(ekip_durum, -1)
+
+    def adim_stili(adim_index):
+        if mevcut_index > adim_index:
+            return {'durum': 'gecildi', 'bg': 'var(--low-bg)', 'border': 'rgba(47,158,110,.4)', 'renk': 'var(--low)', 'etkin': False}
+        if mevcut_index == adim_index:
+            return {'durum': 'mevcut', 'bg': 'var(--med-bg)', 'border': 'rgba(62,139,214,.4)', 'renk': 'var(--med)', 'etkin': True}
+        return {'durum': 'beklemede', 'bg': 'var(--panel-3)', 'border': 'var(--line)', 'renk': 'var(--text-3)', 'etkin': False}
+
+    return {'yolda': adim_stili(0), 'sahadayim': adim_stili(1)}
+
+
 @saha_ekip_gerekli
 def gorevim(request):
     """
@@ -50,7 +75,13 @@ def gorevim(request):
         Ekip.Durum.BOSTA: {'bg': 'var(--low-bg)', 'border': 'rgba(47,158,110,.4)', 'renk': 'var(--low)', 'etiket': 'BOŞTA'},
     }[ekip.durum]
 
-    return render(request, 'ekipler/gorevim.html', {'ekip': ekip, 'kume': kume, 'rozet': gorev_rozeti})
+    context = {
+        'ekip': ekip,
+        'kume': kume,
+        'rozet': gorev_rozeti,
+        'adim_durumlari': _gorev_adim_durumlari(ekip.durum) if kume else None,
+    }
+    return render(request, 'ekipler/gorevim.html', context)
 
 
 @saha_ekip_gerekli
@@ -68,10 +99,12 @@ def gorevim_durum_guncelle(request):
         if adim == 'yolda':
             ekip.durum = Ekip.Durum.YOLDA
             ekip.save(update_fields=['durum'])
+            guncelleme_yayinla()
 
         elif adim == 'sahadayim':
             ekip.durum = Ekip.Durum.GOREVDE
             ekip.save(update_fields=['durum'])
+            guncelleme_yayinla()
 
         elif adim == 'tamamlandi' and ekip.mevcut_olay_kumesi is not None:
             kume = ekip.mevcut_olay_kumesi

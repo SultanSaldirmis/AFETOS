@@ -22,6 +22,25 @@
             <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">Durum</span><span>{{ sel.get_durum_display }}</span></div>
             <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">Atanan ekip</span><span style="font-family:var(--mono)">{{ sel.atanan_ekip.ad|default:"—" }}</span></div>
         </div>
+
+        {% if sel.ihbarlar.count >= 5 %}
+        <details style="border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden">
+            <summary style="padding:8px 10px;background:var(--panel-2);font-size:var(--fs-sm);color:var(--text-2);cursor:pointer;list-style:none">
+                İlgili İhbarlar ({{ sel.ihbarlar.count }}) — genişlet
+            </summary>
+            <div style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column">
+                {% for ihbar in sel.ihbarlar.all %}
+                <div style="padding:8px 10px;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:2px">
+                    <div style="display:flex;justify-content:space-between;font-size:var(--fs-xs);color:var(--text-3)">
+                        <span>#{{ ihbar.id }} · {{ ihbar.get_olay_turu_display }}</span>
+                        <span style="font-family:var(--mono)">{{ ihbar.olusturulma_zamani|date:"d.m H:i" }}</span>
+                    </div>
+                    <div style="font-size:var(--fs-sm);color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ihbar.aciklama }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
     </div>
 
     <div style="padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-3);border-bottom:1px solid var(--line)">

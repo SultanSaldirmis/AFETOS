@@ -183,3 +183,55 @@ class KayitTestleri(TestCase):
         })
         self.assertEqual(yanit.status_code, 200)
         self.assertFalse(User.objects.filter(username='05551230000').exists())
+
+
+class LogoutTestleri(TestCase):
+    """
+    Django 4.1+'ta LogoutView sadece POST kabul ediyor. Tüm sayfalardaki
+    çıkış linkleri <form method="post"> olmalı (GET/<a href> ile 405
+    döner ve buton "çalışmıyormuş" gibi görünür — bkz. iyileştirme
+    promptu adım 6b). Her üç rol için de gerçek oturum sonlandırmayı
+    ve /login/'e yönlendirmeyi doğruluyoruz.
+    """
+
+    def setUp(self):
+        self.koordinator = User.objects.create_user(username='koordinator1', password='demo1234', is_staff=True)
+
+        self.ekip = Ekip.objects.create(ad='Test Ekip', tur=Ekip.Tur.SAGLIK, lat=37.0, lng=37.0)
+        self.saha_user = User.objects.create_user(username='saha1', password='demo1234')
+        self.ekip.user = self.saha_user
+        self.ekip.save(update_fields=['user'])
+
+        self.vatandas_user = User.objects.create_user(username='5551112233', password='demo1234')
+
+    def _oturumu_sonlandirir_ve_login_e_yonlendirir(self, kullanici):
+        self.client.force_login(kullanici)
+
+        # GET ile logout artık 405 vermeli (Django 4.1+ varsayılanı) —
+        # bu, template'lerde <a href="/logout/"> KULLANILMADIĞININ dolaylı
+        # kanıtı; asıl kanıt POST'un başarıyla oturumu kapatması.
+        get_yaniti = self.client.get(reverse('logout'))
+        self.assertEqual(get_yaniti.status_code, 405)
+
+        post_yaniti = self.client.post(reverse('logout'))
+        self.assertRedirects(post_yaniti, reverse('login'))
+
+        # Oturum gerçekten kapandı mı? Korumalı bir sayfa artık login'e düşmeli.
+        kontrol = self.client.get(reverse('dashboard:ana_panel'))
+        self.assertRedirects(kontrol, f"{reverse('login')}?next={reverse('dashboard:ana_panel')}")
+
+    def test_koordinator_logout_yapabilir(self):
+        self._oturumu_sonlandirir_ve_login_e_yonlendirir(self.koordinator)
+
+    def test_saha_ekip_uyesi_logout_yapabilir(self):
+        self._oturumu_sonlandirir_ve_login_e_yonlendirir(self.saha_user)
+
+    def test_vatandas_logout_yapabilir(self):
+        self._oturumu_sonlandirir_ve_login_e_yonlendirir(self.vatandas_user)
+
+    def test_gorevim_sayfasinda_post_form_ile_cikis_linki_var(self):
+        """Görevim'de (önceden hiç çıkış imkânı yoktu) artık bir POST formu olmalı."""
+        self.client.force_login(self.saha_user)
+        yanit = self.client.get(reverse('gorevim'))
+        self.assertContains(yanit, f'action="{reverse("logout")}"')
+        self.assertContains(yanit, 'method="post"')

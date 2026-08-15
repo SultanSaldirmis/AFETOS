@@ -52,7 +52,7 @@
         </div>
         <div style="display:flex;flex-direction:column;gap:2px">
           <span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">{{ ekip.lat|floatformat:3 }}, {{ ekip.lng|floatformat:3 }}</span>
-          <a href="{% url 'olaylar:harita' %}" style="font-size:var(--fs-sm)">Haritada gör</a>
+          <a href="{% url 'olaylar:harita' %}?ekip={{ ekip.id }}" style="font-size:var(--fs-sm)">Haritada gör</a>
         </div>
       </div>
       {% empty %}

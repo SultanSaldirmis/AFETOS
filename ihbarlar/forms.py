@@ -50,8 +50,11 @@ class IhbarForm(forms.ModelForm):
             'tahmini_kisi_sayisi', 'tahmini_yarali_sayisi', 'fotograf',
         ]
         widgets = {
-            'lat': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': 'ör. 37.0600'}),
-            'lng': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': 'ör. 37.3800'}),
+            # lat/lng elle girilmez — operatör ve vatandaş formlarında da
+            # sadece mini/mobil haritaya tıklayarak (veya GPS ile) seçilir,
+            # bu yüzden gizli alan (bkz. _form.html / _vatandas_form.html).
+            'lat': forms.HiddenInput(),
+            'lng': forms.HiddenInput(),
             'olay_turu': forms.Select(attrs={'class': 'form-select'}),
             'aciklama': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Olayı kısaca anlatın...'}),
             'fotograf': forms.ClearableFileInput(attrs={'class': 'form-control'}),
