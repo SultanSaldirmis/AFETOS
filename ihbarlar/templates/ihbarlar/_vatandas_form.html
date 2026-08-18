@@ -1,5 +1,12 @@
-<div id="vatandas-form-wrapper">
-    <button type="button" id="gps-btn" style="background:var(--med);border:1px solid var(--med);color:#fff;font-family:var(--sans);font-size:16px;font-weight:600;border-radius:var(--r-md);padding:16px;cursor:pointer;width:100%;margin-bottom:var(--sp-4)">📍 Konumumu Kullan</button>
+<div id="vatandas-form-wrapper" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+        <button type="button" id="gps-btn" style="background:var(--med);border:1px solid var(--med);color:#fff;font-family:var(--sans);font-size:16px;font-weight:600;border-radius:var(--r-md);padding:14px;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
+            <span>📍</span><span>Konumumu Kullan</span>
+        </button>
+        <div id="konum-bilgisi" style="font-size:var(--fs-xs);color:var(--text-3);text-align:center">
+            {% if form.lat.value and form.lng.value %}Konum: {{ form.lat.value }}, {{ form.lng.value }}{% else %}Konum henüz alınmadı — "Konumumu Kullan"a bas.{% endif %}
+        </div>
+    </div>
 
     <!-- novalidate: lat/lng/tahmini_* gibi GİZLİ input'lar için tarayıcının
          kendi HTML5 doğrulaması devre dışı — gizli bir alan geçersizken
@@ -23,9 +30,6 @@
         </div>
 
         <div style="display:none">{{ form.lat }}{{ form.lng }}</div>
-        <div id="konum-bilgisi" style="font-size:var(--fs-xs);color:var(--text-3)">
-            {% if form.lat.value and form.lng.value %}Konum: {{ form.lat.value }}, {{ form.lng.value }}{% else %}Konum henüz alınmadı — "Konumumu Kullan"a bas.{% endif %}
-        </div>
         {% for hata in form.lat.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
         {% for hata in form.lng.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
 
@@ -58,22 +62,28 @@
             {% for hata in form.aciklama.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
         </div>
 
-        <label for="{{ form.fotograf.id_for_label }}" id="fotograf-etiketi" style="background:var(--panel-2);border:1px dashed var(--line);color:var(--text-2);font-family:var(--sans);font-size:var(--fs-body);border-radius:var(--r-md);padding:16px;cursor:pointer;width:100%;text-align:center;display:block;box-sizing:border-box">📷 Fotoğraf Ekle</label>
+        <label for="{{ form.fotograf.id_for_label }}" id="fotograf-etiketi" style="background:var(--panel-2);border:1px dashed var(--line);color:var(--text-2);font-family:var(--sans);font-size:var(--fs-body);border-radius:var(--r-md);padding:14px;cursor:pointer;width:100%;text-align:center;display:block;box-sizing:border-box">📷 Fotoğraf Ekle</label>
         <div style="display:none">{{ form.fotograf }}</div>
         {% for hata in form.fotograf.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
 
         <!-- Panik anında yanlışlıkla gönderimi önlemek için tek dokunuşluk
              submit yerine "basılı tut" onay mekanizması: buton basılı
              tutuldukça daire dolar, erken bırakılırsa sıfırlanır, form
-             SADECE dolum tamamlanınca gönderilir (madde 1). -->
-        <div style="position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:var(--sp-4);margin:0 calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4));display:flex;flex-direction:column;align-items:center;gap:8px">
-            <button type="button" id="basili-tut-buton"
-                    style="position:relative;width:100px;height:100px;border-radius:50%;border:none;cursor:pointer;padding:0;background:conic-gradient(var(--crit) 0deg, var(--panel-3) 0deg);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;">
-                <span style="position:absolute;inset:5px;border-radius:50%;background:var(--crit);display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box">
-                    <span id="basili-tut-metin" style="font-family:var(--sans);font-size:12.5px;font-weight:700;color:#fff;letter-spacing:.03em;line-height:1.3;pointer-events:none">İHBARI<br>GÖNDER</span>
-                </span>
-            </button>
-            <div id="basili-tut-uyari" style="font-size:var(--fs-xs);color:var(--text-3);min-height:16px;text-align:center">Göndermek için basılı tut</div>
+             SADECE dolum tamamlanınca gönderilir (madde 1). Sticky bar,
+             #sekme-yeni'nin yatay padding'ini negatif margin ile iptal
+             ederek ekranın tam kenarına kadar yayılır; içindeki
+             max-width:560px'lik iç kapsayıcı, sayfanın geri kalanıyla
+             aynı hizada kalmasını sağlar. -->
+        <div style="position:sticky;bottom:0;left:0;right:0;background:var(--panel);border-top:1px solid var(--line);padding:var(--sp-4);margin:0 calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4));display:flex;justify-content:center;z-index:10">
+            <div style="width:100%;max-width:560px;display:flex;flex-direction:column;align-items:center;gap:8px">
+                <button type="button" id="basili-tut-buton"
+                        style="position:relative;width:100px;height:100px;border-radius:50%;border:none;cursor:pointer;padding:0;background:conic-gradient(var(--crit) 0deg, var(--panel-3) 0deg);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;">
+                    <span style="position:absolute;inset:5px;border-radius:50%;background:var(--crit);display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box">
+                        <span id="basili-tut-metin" style="font-family:var(--sans);font-size:12.5px;font-weight:700;color:#fff;letter-spacing:.03em;line-height:1.3;pointer-events:none">İHBARI<br>GÖNDER</span>
+                    </span>
+                </button>
+                <div id="basili-tut-uyari" style="font-size:var(--fs-xs);color:var(--text-3);min-height:16px;text-align:center">Göndermek için basılı tut</div>
+            </div>
         </div>
     </form>
 </div>
@@ -99,7 +109,7 @@
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.textContent = ty.etiket;
-            btn.style.cssText = `background:${aktif ? 'var(--med-bg)' : 'var(--panel-2)'};border:1px solid ${aktif ? 'var(--med)' : 'var(--line)'};color:${aktif ? 'var(--med)' : 'var(--text-2)'};font-family:var(--sans);font-size:15px;font-weight:500;border-radius:var(--r-md);padding:20px 12px;cursor:pointer`;
+            btn.style.cssText = `background:${aktif ? 'var(--med)' : 'var(--panel)'};border:1px solid ${aktif ? 'var(--med)' : 'var(--line)'};color:${aktif ? '#fff' : 'var(--text-2)'};font-family:var(--sans);font-size:14px;font-weight:500;border-radius:var(--r-md);min-height:52px;padding:16px 10px;cursor:pointer`;
             btn.addEventListener('click', () => { secim.value = ty.deger; butonlariCiz(); });
             kok.appendChild(btn);
         });

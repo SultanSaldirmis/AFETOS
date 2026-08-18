@@ -34,9 +34,11 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# Railway'in verdiği varsayılan *.up.railway.app adresi + ALLOWED_HOSTS
-# ortam değişkeninden (virgülle ayrılmış) ek host eklenebilir.
-ALLOWED_HOSTS = ['.up.railway.app']
+# Railway'in verdiği varsayılan *.up.railway.app adresi + yerel geliştirme
+# (localhost/127.0.0.1 — DEBUG=False iken bile runserver ile açılabilsin
+# diye, bunlar zaten dışarıdan erişilemeyen loopback adresleri, production'da
+# zarar vermez) + ALLOWED_HOSTS ortam değişkeninden (virgülle ayrılmış) ek host.
+ALLOWED_HOSTS = ['.up.railway.app', 'localhost', '127.0.0.1']
 _ekstra_hostlar = os.environ.get('ALLOWED_HOSTS', '')
 if _ekstra_hostlar:
     ALLOWED_HOSTS += [h.strip() for h in _ekstra_hostlar.split(',') if h.strip()]
