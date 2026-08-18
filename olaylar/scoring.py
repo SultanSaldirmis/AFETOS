@@ -27,6 +27,8 @@ from django.conf import settings
 # bildirilen olay_turu ile tutarlı mı diye basit bir sinyal olarak kullanılır.
 # NOT: Bu liste basit bir sözlük eşleştirmesidir; gerçek bir NLP/metin
 # analizi değildir, prototip amaçlıdır.
+TEK_IHBAR_GUVEN_SKORU_TAVANI = 90
+
 OLAY_TURU_ANAHTAR_KELIMELER = {
     'deprem_hasari': ['deprem', 'çökme', 'çöktü', 'yıkıl', 'çatlak', 'bina', 'duvar'],
     'yangin': ['yangın', 'yanıyor', 'alev', 'duman', 'ateş'],
@@ -152,7 +154,17 @@ def guven_skoru_hesapla(ihbarlar: list[IhbarVerisi]) -> int:
     fotograf_bonusu = fotograf_bonusu_degeri if any(i.fotograf_var for i in ihbarlar) else 0
 
     skor = taban_skor + tutarlilik_duzeltmesi - celiski_cezasi + fotograf_bonusu
-    return int(round(max(0, min(100, skor))))
+    skor = max(0, min(100, skor))
+
+    # Tek ihbar tavanı: kümede tek bir (bağımsız) ihbar varsa — fotoğraf
+    # olsa dahi — sonuç 90'ı geçemez. Güven, esas olarak BİRDEN FAZLA
+    # bağımsız kaynağın aynı olayı doğrulamasından gelir; tek kaynak ne
+    # kadar "iyi" görünürse görünsün bu üst sınırın altında kalmalı. 2+
+    # bağımsız ihbar varsa bu tavan tamamen kalkar, skor 100'e kadar çıkabilir.
+    if len(ihbarlar) == 1:
+        skor = min(skor, TEK_IHBAR_GUVEN_SKORU_TAVANI)
+
+    return int(round(skor))
 
 
 def dogrulama_gerekli_mi(guven_skoru: int) -> bool:
@@ -175,7 +187,34 @@ def dogrulama_gerekli_mi(guven_skoru: int) -> bool:
 # aralığına sıkıştırılır. Ağırlıklar ve doyma eşikleri gerçek afet
 # operasyonlarında kullanılacak kesin/onaylı katsayılar DEĞİLDİR, sadece
 # prototip/simülasyon amaçlıdır (bkz. settings.py yorumları).
+#
+# Bunun üzerine, ham ağırlıklı toplamdan (taban skor) SONRA bir "kritik
+# kelime çarpanı" uygulanır — bkz. kritik_kelime_carpani.
 # ---------------------------------------------------------------------------
+
+
+# İhbar açıklamasında geçmesi öncelik skorunu artıran kritik kelimeler.
+# Basit bir sözlük eşleştirmesidir, gerçek bir NLP/varlık tanıma değildir —
+# prototip amaçlıdır.
+KRITIK_KELIMELER = ['çocuk', 'bebek', 'kanama', 'nefes alamıyorum', 'bilinci kapalı', 'enkaz altında']
+
+
+def kritik_kelime_carpani(aciklama: str) -> float:
+    """
+    Açıklama metninde KRITIK_KELIMELER'den kaç tanesinin geçtiğine göre bir
+    çarpan döner: 0 eşleşme -> 0.0, 1 eşleşme -> 0.20, 2+ eşleşme -> 0.30.
+
+    NOT: Türkçe case-folding için basit `.lower()` kullanılıyor; ICU
+    tabanlı tam (örn. 'İ'/'I' Türkçe büyük/küçük harf) çözüm bu prototipte
+    bilerek kullanılmıyor.
+    """
+    if not aciklama:
+        return 0.0
+    metin = aciklama.lower()
+    eslesme = sum(1 for k in KRITIK_KELIMELER if k in metin)
+    if eslesme == 0:
+        return 0.0
+    return 0.30 if eslesme >= 2 else 0.20
 
 
 @dataclass(frozen=True)
@@ -195,6 +234,9 @@ class OlayKumesiOzeti:
     # doldurulana kadar None bırakılabilir; bu durumda nötr varsayılan
     # kullanılır.
     ulasilabilirlik_puani: Optional[float] = None
+    # Kümedeki tüm ihbarların açıklamaları birleştirilmiş hali (kritik
+    # kelime çarpanı bu metin üzerinde aranır — bkz. kritik_kelime_carpani).
+    birlesik_aciklama: str = ''
 
 
 def _dogrusal_olcekle(deger: float, doyma_esigi: float) -> float:
@@ -247,9 +289,13 @@ def oncelik_skoru_hesapla(ozet: OlayKumesiOzeti) -> int:
         'zaman_faktoru': _dogrusal_olcekle(ozet.gecen_dakika, zaman_esigi),
     }
 
-    agirlikli_toplam = sum(
+    taban_skor = sum(
         bilesen_puanlari[bilesen] * agirlik
         for bilesen, agirlik in agirliklar.items()
     )
+    taban_skor = max(0, min(100, taban_skor))
 
-    return int(round(max(0, min(100, agirlikli_toplam))))
+    carpan = kritik_kelime_carpani(ozet.birlesik_aciklama)
+    final_skor = min(100, taban_skor * (1 + carpan))
+
+    return int(round(max(0, final_skor)))

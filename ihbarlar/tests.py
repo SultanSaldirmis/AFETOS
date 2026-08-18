@@ -97,6 +97,41 @@ class IhbariKumeyeAtaTestleri(TestCase):
         if kume.guven_skoru < 50:
             self.assertEqual(kume.durum, OlayKumesi.Durum.DOGRULANIYOR)
 
+    def test_aynı_konumda_farkli_turler_ayri_kume_acar(self):
+        # Madde 3: mesafe uysa bile olay_turu uymuyorsa AYNI kümeye eklenmez.
+        yangin_ihbar = Ihbar.objects.create(
+            lat=37.0600, lng=37.3800, olay_turu='yangin',
+            aciklama='Yangın var, alevler büyüyor.', tahmini_kisi_sayisi=2,
+        )
+        ihbari_kumeye_ata(yangin_ihbar)
+
+        # Aynı konum (~10m kayma), farklı tür (tibbi) -> yeni küme açılmalı.
+        tibbi_ihbar = Ihbar.objects.create(
+            lat=37.0601, lng=37.3801, olay_turu='tibbi',
+            aciklama='Yaralı var, kanama mevcut.', tahmini_kisi_sayisi=1,
+        )
+        tibbi_kume = ihbari_kumeye_ata(tibbi_ihbar)
+
+        self.assertEqual(OlayKumesi.objects.count(), 2)
+        self.assertEqual(tibbi_kume.ihbarlar.count(), 1)
+
+    def test_aynı_konumda_ayni_turler_ayni_kumede_birlesir(self):
+        ilk = Ihbar.objects.create(
+            lat=37.0600, lng=37.3800, olay_turu='yangin',
+            aciklama='Yangın var, alevler büyüyor.', tahmini_kisi_sayisi=2,
+        )
+        ilk_kume = ihbari_kumeye_ata(ilk)
+
+        ikinci = Ihbar.objects.create(
+            lat=37.0601, lng=37.3801, olay_turu='yangin',
+            aciklama='Duman her yeri kapladı.', tahmini_kisi_sayisi=1,
+        )
+        ikinci_kume = ihbari_kumeye_ata(ikinci)
+
+        self.assertEqual(OlayKumesi.objects.count(), 1)
+        self.assertEqual(ilk_kume.id, ikinci_kume.id)
+        self.assertEqual(ikinci_kume.ihbarlar.count(), 2)
+
     def test_tamamlanmis_kumeye_yeni_ihbar_eklenmez(self):
         ihbar = Ihbar.objects.create(
             lat=37.0600, lng=37.3800, olay_turu='enkaz',

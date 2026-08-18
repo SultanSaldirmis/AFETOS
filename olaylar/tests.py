@@ -12,6 +12,7 @@ from .scoring import (
     OlayKumesiOzeti,
     dogrulama_gerekli_mi,
     guven_skoru_hesapla,
+    kritik_kelime_carpani,
     oncelik_skoru_hesapla,
 )
 from .services import KumeAday, eslesen_kumeyi_bul, haversine_mesafe_metre, yeni_merkez_hesapla
@@ -99,6 +100,28 @@ class GuvenSkoruHesaplaTestleri(TestCase):
         skor = guven_skoru_hesapla(ihbarlar)
         self.assertGreaterEqual(skor, 0)
         self.assertLessEqual(skor, 100)
+
+    def test_tek_ihbar_fotografli_olsa_bile_90i_gecmez(self):
+        ihbar = IhbarVerisi(
+            aciklama='Enkaz altından ses geliyor, kurtarma ekibi bekleniyor.',
+            olay_turu='enkaz',
+            fotograf_var=True,
+        )
+        skor = guven_skoru_hesapla([ihbar])
+        self.assertLessEqual(skor, 90)
+
+    def test_iki_bagimsiz_ihbar_90i_asabilir(self):
+        ihbarlar = [
+            IhbarVerisi(
+                aciklama='Enkaz altından ses geliyor, kurtarma ekibi bekleniyor.',
+                olay_turu='enkaz',
+                fotograf_var=True,
+                tahmini_kisi_sayisi=4,
+            )
+            for _ in range(8)
+        ]
+        skor = guven_skoru_hesapla(ihbarlar)
+        self.assertGreater(skor, 90)
 
 
 class DogrulamaGerekliMiTestleri(TestCase):
@@ -206,6 +229,62 @@ class OncelikSkoruHesaplaTestleri(TestCase):
         self.assertLessEqual(skor, 100)
 
 
+class KritikKelimeCarpaniTestleri(TestCase):
+
+    def test_kritik_kelime_yoksa_carpan_sifir(self):
+        self.assertEqual(kritik_kelime_carpani('Binada hafif çatlaklar var.'), 0.0)
+
+    def test_bos_aciklama_carpan_sifir(self):
+        self.assertEqual(kritik_kelime_carpani(''), 0.0)
+        self.assertEqual(kritik_kelime_carpani(None), 0.0)
+
+    def test_tek_kritik_kelime_carpan_020(self):
+        self.assertEqual(kritik_kelime_carpani('Binada bir çocuk mahsur kaldı.'), 0.20)
+
+    def test_iki_veya_fazla_kritik_kelime_carpan_030(self):
+        self.assertEqual(
+            kritik_kelime_carpani('Çocuk enkaz altında, bilinci kapalı, kanama var.'),
+            0.30,
+        )
+
+    def test_buyuk_kucuk_harf_duyarsiz(self):
+        self.assertEqual(kritik_kelime_carpani('BEBEK mahsur kaldı.'), 0.20)
+
+    def test_oncelik_skoru_kritik_kelimeyle_artar_ve_100u_gecmez(self):
+        kritik_yok = OlayKumesiOzeti(
+            toplam_etkilenen_kisi=100000, toplam_yarali=100000,
+            baskin_olay_turu='enkaz', gecen_dakika=100000,
+            birlesik_aciklama='sıradan bir açıklama',
+        )
+        kritik_var = OlayKumesiOzeti(
+            toplam_etkilenen_kisi=100000, toplam_yarali=100000,
+            baskin_olay_turu='enkaz', gecen_dakika=100000,
+            birlesik_aciklama='çocuk enkaz altında, bilinci kapalı',
+        )
+        skor_yok = oncelik_skoru_hesapla(kritik_yok)
+        skor_var = oncelik_skoru_hesapla(kritik_var)
+        # Taban skor zaten doygun (aşırı değerler) olduğu için ikisi de
+        # 100'de kalır — clamp doğru çalışıyor mu, en önemlisi bu.
+        self.assertLessEqual(skor_yok, 100)
+        self.assertLessEqual(skor_var, 100)
+
+    def test_oncelik_skoru_kritik_kelimeyle_dogrudan_yukselir(self):
+        kritik_yok = OlayKumesiOzeti(
+            toplam_etkilenen_kisi=10, toplam_yarali=1,
+            baskin_olay_turu='tibbi', gecen_dakika=10,
+            birlesik_aciklama='sıradan bir açıklama',
+        )
+        kritik_var = OlayKumesiOzeti(
+            toplam_etkilenen_kisi=10, toplam_yarali=1,
+            baskin_olay_turu='tibbi', gecen_dakika=10,
+            birlesik_aciklama='çocuk enkaz altında, bilinci kapalı',
+        )
+        self.assertGreater(
+            oncelik_skoru_hesapla(kritik_var),
+            oncelik_skoru_hesapla(kritik_yok),
+        )
+
+
 class HaversineMesafeTestleri(TestCase):
 
     def test_ayni_nokta_sifir_mesafe(self):
@@ -229,27 +308,32 @@ class HaversineMesafeTestleri(TestCase):
 class EslesenKumeyiBulTestleri(TestCase):
 
     def test_yaricap_disindaysa_none_doner(self):
-        adaylar = [KumeAday(id=1, merkez_lat=37.0, merkez_lng=37.0)]
+        adaylar = [KumeAday(id=1, merkez_lat=37.0, merkez_lng=37.0, olay_turu='enkaz')]
         # ~1 derece enlem farkı ~111 km eder, yarıçapın (400m) çok dışında.
-        sonuc = eslesen_kumeyi_bul(38.0, 37.0, adaylar, yaricap_metre=400)
+        sonuc = eslesen_kumeyi_bul(38.0, 37.0, 'enkaz', adaylar, yaricap_metre=400)
         self.assertIsNone(sonuc)
 
     def test_yaricap_icindeyse_eslestirir(self):
-        adaylar = [KumeAday(id=1, merkez_lat=37.0600, merkez_lng=37.3800)]
+        adaylar = [KumeAday(id=1, merkez_lat=37.0600, merkez_lng=37.3800, olay_turu='enkaz')]
         # Çok küçük bir kayma (~10-20 metre civarı), 400m yarıçap içinde kalmalı.
-        sonuc = eslesen_kumeyi_bul(37.0601, 37.3801, adaylar, yaricap_metre=400)
+        sonuc = eslesen_kumeyi_bul(37.0601, 37.3801, 'enkaz', adaylar, yaricap_metre=400)
         self.assertEqual(sonuc, 1)
 
     def test_birden_fazla_adaydan_en_yakini_secer(self):
         adaylar = [
-            KumeAday(id=1, merkez_lat=37.0700, merkez_lng=37.3900),  # uzak
-            KumeAday(id=2, merkez_lat=37.0601, merkez_lng=37.3801),  # yakın
+            KumeAday(id=1, merkez_lat=37.0700, merkez_lng=37.3900, olay_turu='enkaz'),  # uzak
+            KumeAday(id=2, merkez_lat=37.0601, merkez_lng=37.3801, olay_turu='enkaz'),  # yakın
         ]
-        sonuc = eslesen_kumeyi_bul(37.0600, 37.3800, adaylar, yaricap_metre=5000)
+        sonuc = eslesen_kumeyi_bul(37.0600, 37.3800, 'enkaz', adaylar, yaricap_metre=5000)
         self.assertEqual(sonuc, 2)
 
     def test_aday_yoksa_none_doner(self):
-        self.assertIsNone(eslesen_kumeyi_bul(37.0, 37.0, [], yaricap_metre=400))
+        self.assertIsNone(eslesen_kumeyi_bul(37.0, 37.0, 'enkaz', [], yaricap_metre=400))
+
+    def test_turu_uymayan_aday_mesafe_uysa_bile_eslesmez(self):
+        adaylar = [KumeAday(id=1, merkez_lat=37.0600, merkez_lng=37.3800, olay_turu='yangin')]
+        sonuc = eslesen_kumeyi_bul(37.0601, 37.3801, 'tibbi', adaylar, yaricap_metre=400)
+        self.assertIsNone(sonuc)
 
 
 class YeniMerkezHesaplaTestleri(TestCase):

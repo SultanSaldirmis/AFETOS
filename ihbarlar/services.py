@@ -35,13 +35,19 @@ def ihbari_kumeye_ata(ihbar) -> OlayKumesi:
     """
     yaricap_metre = getattr(settings, 'KUMELEME_YARICAPI_METRE', 400)
 
+    # Küme modelinde ayrı bir olay_turu alanı yok; kümenin türü, içindeki
+    # ihbarların (yeni türü karışması artık eslesen_kumeyi_bul tarafından
+    # engellendiği için hepsi aynı olan) türünden türetilir. İlişkili hiç
+    # ihbarı olmayan (teorik olarak imkansız ama savunmacı) bir küme
+    # eşleştirmeye dahil edilmez.
     aktif_kumeler = OlayKumesi.objects.exclude(durum=OlayKumesi.Durum.TAMAMLANDI)
     adaylar = [
-        KumeAday(id=k.id, merkez_lat=k.merkez_lat, merkez_lng=k.merkez_lng)
+        KumeAday(id=k.id, merkez_lat=k.merkez_lat, merkez_lng=k.merkez_lng, olay_turu=ilk_ihbar.olay_turu)
         for k in aktif_kumeler
+        if (ilk_ihbar := k.ihbarlar.first()) is not None
     ]
 
-    eslesen_id = eslesen_kumeyi_bul(ihbar.lat, ihbar.lng, adaylar, yaricap_metre)
+    eslesen_id = eslesen_kumeyi_bul(ihbar.lat, ihbar.lng, ihbar.olay_turu, adaylar, yaricap_metre)
 
     if eslesen_id is not None:
         kume = OlayKumesi.objects.get(id=eslesen_id)
@@ -91,6 +97,7 @@ def _kume_skorlarini_guncelle(kume: OlayKumesi) -> None:
         toplam_yarali=sum(i.tahmini_yarali_sayisi for i in ihbarlar),
         baskin_olay_turu=baskin_olay_turu,
         gecen_dakika=gecen_dakika,
+        birlesik_aciklama=' '.join(i.aciklama for i in ihbarlar if i.aciklama),
     )
     kume.oncelik_skoru = oncelik_skoru_hesapla(ozet)
 

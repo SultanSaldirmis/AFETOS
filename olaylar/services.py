@@ -35,27 +35,34 @@ def haversine_mesafe_metre(lat1: float, lng1: float, lat2: float, lng2: float) -
 
 @dataclass(frozen=True)
 class KumeAday:
-    """Eşleştirme sırasında kullanılan minimal küme verisi (id + merkez konum)."""
+    """Eşleştirme sırasında kullanılan minimal küme verisi (id + merkez konum + olay türü)."""
     id: int
     merkez_lat: float
     merkez_lng: float
+    olay_turu: str
 
 
 def eslesen_kumeyi_bul(
     lat: float,
     lng: float,
+    olay_turu: str,
     adaylar: list[KumeAday],
     yaricap_metre: float,
 ) -> Optional[int]:
     """
-    Verilen konuma yarıçap içinde kalan küme adayları arasından en yakın
-    olanının id'sini döner. Yarıçap içinde hiçbir aday yoksa None döner
-    (bu durumda çağıran taraf yeni bir küme açmalıdır).
+    Verilen konum VE olay türüne (aynı olay_turu) sahip, yarıçap içinde
+    kalan küme adayları arasından en yakın olanının id'sini döner. Mesafe
+    uyan ama türü uymayan bir küme ASLA eşleşmez — bu durumda ve yarıçap
+    içinde hiçbir aday yoksa None döner (çağıran taraf yeni bir küme
+    açmalıdır). Böylece örn. aynı yerdeki bir yangın ihbarı ile bir tıbbi
+    ihbar farklı kümelerde kalır.
     """
     en_yakin_id: Optional[int] = None
     en_yakin_mesafe: Optional[float] = None
 
     for aday in adaylar:
+        if aday.olay_turu != olay_turu:
+            continue
         mesafe = haversine_mesafe_metre(lat, lng, aday.merkez_lat, aday.merkez_lng)
         if mesafe <= yaricap_metre and (en_yakin_mesafe is None or mesafe < en_yakin_mesafe):
             en_yakin_mesafe = mesafe

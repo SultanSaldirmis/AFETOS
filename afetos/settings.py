@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -21,12 +22,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xjfxcmt$1=uu@_f9@eypy+bbjzm(23ghg7hvhkxluf)sx2b158'
+# Railway'de (ve her production ortamında) SECRET_KEY ortam değişkeninden
+# okunur — kod içine hardcode edilmiş anahtar YOKTUR. Yerelde .env veya
+# shell'de SECRET_KEY tanımlanmazsa geliştirme için sabit bir varsayılan
+# kullanılır (bu varsayılan production'da KULLANILMAMALI).
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-xjfxcmt$1=uu@_f9@eypy+bbjzm(23ghg7hvhkxluf)sx2b158',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+# Railway'in verdiği varsayılan *.up.railway.app adresi + ALLOWED_HOSTS
+# ortam değişkeninden (virgülle ayrılmış) ek host eklenebilir.
+ALLOWED_HOSTS = ['.up.railway.app']
+_ekstra_hostlar = os.environ.get('ALLOWED_HOSTS', '')
+if _ekstra_hostlar:
+    ALLOWED_HOSTS += [h.strip() for h in _ekstra_hostlar.split(',') if h.strip()]
+
+# Railway'in reverse proxy'si HTTPS'i sonlandırıp isteği HTTP olarak
+# uygulamaya iletir; Django'nun bunu HTTPS olarak tanıması gerekir —
+# aksi halde login/logout POST formlarında CSRF doğrulaması başarısız olur.
+CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -84,6 +103,10 @@ CHANNEL_LAYERS = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # whitenoise: statik dosyaları ayrı bir web sunucusu (nginx vb.)
+    # olmadan doğrudan Django/Daphne üzerinden verimli şekilde sunar —
+    # Railway'de bunun dışında bir statik dosya sunucusu yok.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -119,7 +142,11 @@ WSGI_APPLICATION = 'afetos.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        # Railway'de kalıcı bir Volume mount edilip DB_PATH ortam
+        # değişkeni (ör. /data/db.sqlite3) o volume'a işaret edecek
+        # şekilde ayarlanır — deploy'lar arası veri kaybolmasın diye.
+        # Yerelde DB_PATH tanımsızsa proje kökündeki eski davranış korunur.
+        'NAME': os.environ.get('DB_PATH', BASE_DIR / 'db.sqlite3'),
     }
 }
 
@@ -160,6 +187,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# collectstatic bu dizine toplar (bkz. Procfile); whitenoise buradan sunar.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Kullanıcıların yüklediği dosyalar (ör. ihbar fotoğrafları)
 MEDIA_URL = 'media/'
