@@ -24,6 +24,11 @@
                     {% for hata in form.ad_soyad.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
                 </div>
                 <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">{{ form.tc_kimlik_no.label }}</label>
+                    {{ form.tc_kimlik_no }}
+                    {% for hata in form.tc_kimlik_no.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
                     <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">{{ form.telefon.label }}</label>
                     {{ form.telefon }}
                     {% for hata in form.telefon.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}

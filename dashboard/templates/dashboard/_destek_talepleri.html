@@ -1,0 +1,44 @@
+<div id="destek-talepleri-panel" style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--line)">
+        <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px">🚩</span>
+            <span style="font-size:var(--fs-h2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)">Destek Talepleri</span>
+        </div>
+        <span style="font-family:var(--mono);font-size:var(--fs-xs);color:{% if destek_talepleri %}var(--high){% else %}var(--text-3){% endif %}">{{ destek_talepleri|length }} BEKLİYOR</span>
+    </div>
+    <div style="display:flex;flex-direction:column;max-height:280px;overflow-y:auto">
+        {% for satir in destek_talepleri %}
+        <div style="padding:var(--sp-3) var(--sp-5);border-bottom:1px solid var(--line-soft);display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-2)">
+                <span style="font-size:var(--fs-sm);font-weight:600">{{ satir.talep.talep_eden_ekip.ad }}</span>
+                <span style="font-family:var(--mono);font-size:var(--fs-xs);color:var(--text-3)">{{ satir.talep.olusturulma_zamani|timesince }} önce</span>
+            </div>
+            <div style="font-size:var(--fs-xs);color:var(--text-3)">Olay #{{ satir.talep.olay_kumesi_id }} için destek istiyor</div>
+            {% if satir.talep.aciklama %}
+            <div style="font-size:var(--fs-sm);color:var(--text-2);line-height:1.4">{{ satir.talep.aciklama }}</div>
+            {% endif %}
+            <div style="display:flex;gap:var(--sp-2);align-items:center;margin-top:2px">
+                {% if satir.onerilen_ekip %}
+                <form hx-post="{% url 'dashboard:destek_talebi_guncelle' satir.talep.id %}"
+                      hx-target="#destek-talepleri-panel" hx-swap="outerHTML" style="display:flex;gap:6px;flex:1">
+                    {% csrf_token %}
+                    <input type="hidden" name="eylem" value="yonlendir">
+                    <input type="hidden" name="ekip_id" value="{{ satir.onerilen_ekip.id }}">
+                    <button type="submit" style="flex:1;background:var(--med);border:1px solid var(--med);color:#fff;font-family:var(--sans);font-size:var(--fs-xs);font-weight:600;border-radius:var(--r-sm);padding:6px 10px;cursor:pointer">★ {{ satir.onerilen_ekip.ad }} Yönlendir</button>
+                </form>
+                {% else %}
+                <span style="font-size:var(--fs-xs);color:var(--text-3);flex:1">Uygun boşta ekip yok.</span>
+                {% endif %}
+                <form hx-post="{% url 'dashboard:destek_talebi_guncelle' satir.talep.id %}"
+                      hx-target="#destek-talepleri-panel" hx-swap="outerHTML">
+                    {% csrf_token %}
+                    <input type="hidden" name="eylem" value="kapat">
+                    <button type="submit" style="background:transparent;border:1px solid var(--line);color:var(--text-3);font-family:var(--sans);font-size:var(--fs-xs);border-radius:var(--r-sm);padding:6px 10px;cursor:pointer">Kapat</button>
+                </form>
+            </div>
+        </div>
+        {% empty %}
+        <div style="padding:var(--sp-5);text-align:center;color:var(--text-3);font-size:var(--fs-sm)">Bekleyen destek talebi yok.</div>
+        {% endfor %}
+    </div>
+</div>

@@ -1,8 +1,14 @@
 <div id="vatandas-form-wrapper">
     <button type="button" id="gps-btn" style="background:var(--med);border:1px solid var(--med);color:#fff;font-family:var(--sans);font-size:16px;font-weight:600;border-radius:var(--r-md);padding:16px;cursor:pointer;width:100%;margin-bottom:var(--sp-4)">📍 Konumumu Kullan</button>
 
+    <!-- novalidate: lat/lng/tahmini_* gibi GİZLİ input'lar için tarayıcının
+         kendi HTML5 doğrulaması devre dışı — gizli bir alan geçersizken
+         tarayıcı ona odaklanamadığından formu sessizce (hiçbir hata
+         göstermeden) engelliyordu. Sunucu taraflı Django validasyonumuz
+         zaten tüm kuralları (.hata-mesaji ile) görünür şekilde uyguluyor,
+         tek doğruluk kaynağı o. -->
     <form hx-post="{% url 'vatandas' %}" hx-encoding="multipart/form-data"
-          hx-target="#vatandas-form-wrapper" hx-swap="outerHTML"
+          hx-target="#vatandas-form-wrapper" hx-swap="outerHTML" novalidate
           style="display:flex;flex-direction:column;gap:var(--sp-4)">
         {% csrf_token %}
         {% if form.non_field_errors %}
@@ -56,14 +62,25 @@
         <div style="display:none">{{ form.fotograf }}</div>
         {% for hata in form.fotograf.errors %}<div class="hata-mesaji">{{ hata }}</div>{% endfor %}
 
-        <div style="position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:var(--sp-4);margin:0 calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4))">
-            <button type="submit" style="background:var(--crit);border:1px solid var(--crit);color:#fff;font-family:var(--sans);font-size:17px;font-weight:700;letter-spacing:.03em;border-radius:var(--r-md);padding:18px;cursor:pointer;width:100%">İHBARI GÖNDER</button>
+        <!-- Panik anında yanlışlıkla gönderimi önlemek için tek dokunuşluk
+             submit yerine "basılı tut" onay mekanizması: buton basılı
+             tutuldukça daire dolar, erken bırakılırsa sıfırlanır, form
+             SADECE dolum tamamlanınca gönderilir (madde 1). -->
+        <div style="position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:var(--sp-4);margin:0 calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4));display:flex;flex-direction:column;align-items:center;gap:8px">
+            <button type="button" id="basili-tut-buton"
+                    style="position:relative;width:100px;height:100px;border-radius:50%;border:none;cursor:pointer;padding:0;background:conic-gradient(var(--crit) 0deg, var(--panel-3) 0deg);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;">
+                <span style="position:absolute;inset:5px;border-radius:50%;background:var(--crit);display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;box-sizing:border-box">
+                    <span id="basili-tut-metin" style="font-family:var(--sans);font-size:12.5px;font-weight:700;color:#fff;letter-spacing:.03em;line-height:1.3;pointer-events:none">İHBARI<br>GÖNDER</span>
+                </span>
+            </button>
+            <div id="basili-tut-uyari" style="font-size:var(--fs-xs);color:var(--text-3);min-height:16px;text-align:center">Göndermek için basılı tut</div>
         </div>
     </form>
 </div>
 
 <script>
 (function () {
+    const form = document.querySelector('#vatandas-form-wrapper form');
     const OLAY_TURLERI = [
         { deger: 'deprem_hasari', etiket: 'Deprem Hasarı' },
         { deger: 'yangin', etiket: 'Yangın' },
@@ -120,6 +137,71 @@
             const etiket = document.getElementById('fotograf-etiketi');
             etiket.textContent = e.target.files.length ? `📷 ${e.target.files[0].name}` : '📷 Fotoğraf Ekle';
         });
+    }
+
+    // --- Basılı tut onay mekanizması (madde 1) ---
+    // Vanilla JS, dış kütüphane yok. pointerdown/pointerup zaten hem
+    // mouse hem touch'ı kapsar, ama mobil öncelikli olduğu için ve bazı
+    // eski tarayıcılarda pointer event desteği eksik olabileceğinden
+    // mousedown/touchstart de AYRICA dinleniyor (guard ile çifte tetiklemeyi
+    // önlüyoruz).
+    const tutButon = document.getElementById('basili-tut-buton');
+    const tutMetin = document.getElementById('basili-tut-metin');
+    const tutUyari = document.getElementById('basili-tut-uyari');
+    if (tutButon && form) {
+        const DOLUM_SURESI_MS = 1800;
+        let baslangicZamani = null;
+        let animasyonId = null;
+        let tamamlandi = false;
+
+        function sifirla() {
+            if (animasyonId !== null) cancelAnimationFrame(animasyonId);
+            animasyonId = null;
+            baslangicZamani = null;
+            tutButon.style.background = 'conic-gradient(var(--crit) 0deg, var(--panel-3) 0deg)';
+            tutMetin.innerHTML = 'İHBARI<br>GÖNDER';
+            tutUyari.textContent = 'Göndermek için basılı tut';
+        }
+
+        function adimla(zaman) {
+            if (baslangicZamani === null) baslangicZamani = zaman;
+            const oran = Math.min((zaman - baslangicZamani) / DOLUM_SURESI_MS, 1);
+            const derece = oran * 360;
+            tutButon.style.background = `conic-gradient(var(--crit) ${derece}deg, var(--panel-3) ${derece}deg)`;
+
+            if (oran >= 1) {
+                tamamlandi = true;
+                tutUyari.textContent = 'Gönderiliyor…';
+                form.requestSubmit();
+                return;
+            }
+            animasyonId = requestAnimationFrame(adimla);
+        }
+
+        function basiliTutmayaBasla(e) {
+            if (e.cancelable) e.preventDefault();
+            if (animasyonId !== null || tamamlandi) return; // zaten basılı / gönderildi
+            tutMetin.innerHTML = 'TUTMAYA<br>DEVAM ET';
+            tutUyari.textContent = 'Basılı tutuyor, bırakma';
+            baslangicZamani = null;
+            animasyonId = requestAnimationFrame(adimla);
+        }
+
+        function birak() {
+            if (tamamlandi) return;
+            sifirla();
+        }
+
+        tutButon.addEventListener('pointerdown', basiliTutmayaBasla);
+        tutButon.addEventListener('pointerup', birak);
+        tutButon.addEventListener('pointerleave', birak);
+        tutButon.addEventListener('pointercancel', birak);
+        tutButon.addEventListener('mousedown', basiliTutmayaBasla);
+        tutButon.addEventListener('mouseup', birak);
+        tutButon.addEventListener('mouseleave', birak);
+        tutButon.addEventListener('touchstart', basiliTutmayaBasla, { passive: false });
+        tutButon.addEventListener('touchend', birak);
+        tutButon.addEventListener('touchcancel', birak);
     }
 })();
 </script>

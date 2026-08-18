@@ -1,6 +1,13 @@
 {% extends "base_standalone.html" %}
 {% block title %}Görevim{% endblock %}
 
+{% block extra_head %}
+<style>
+    #destek-talebi-modal::backdrop { background: rgba(10, 13, 17, .7); }
+    #destek-talebi-modal { margin: auto; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div style="min-height:100vh;background:var(--bg);display:flex;flex-direction:column">
     <div style="border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5">
@@ -50,6 +57,33 @@
                 </div>
             </div>
         </div>
+        <!-- Destek İste: durum güncelleme akışından BAĞIMSIZ, göreve her
+             aşamada erişilebilir olması gerektiği için ayrı bir buton
+             (madde 2). Sadece kümenin ATANAN ekibi değil, bu ekip de ek
+             yardım isteyebilir. -->
+        <button type="button" onclick="document.getElementById('destek-talebi-modal').showModal()"
+                style="background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-family:var(--sans);font-size:15px;font-weight:600;border-radius:var(--r-md);padding:14px;cursor:pointer;width:100%">🚩 Destek İste</button>
+
+        <dialog id="destek-talebi-modal" style="border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);color:var(--text);padding:0;width:min(420px, calc(100vw - 48px));">
+            <form method="post" action="{% url 'gorevim_destek_talebi_olustur' %}" style="display:flex;flex-direction:column;gap:var(--sp-4);padding:var(--sp-5)">
+                {% csrf_token %}
+                <div>
+                    <h2 style="margin:0 0 4px;font-size:17px;font-weight:600">🚩 Destek İste</h2>
+                    <div style="font-size:var(--fs-sm);color:var(--text-3)">Olay #{{ kume.id }} için ek ekip/yardım talebi gönder.</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:5px">
+                    <label style="font-size:var(--fs-xs);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)">Açıklama (opsiyonel)</label>
+                    <textarea name="aciklama" rows="3" placeholder="Neye ihtiyacın var? (ör. ek arama kurtarma ekibi, ağır ekipman...)"
+                              style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--text);font-family:var(--sans);font-size:var(--fs-body);padding:10px 11px;resize:vertical;width:100%;box-sizing:border-box"></textarea>
+                </div>
+                <div style="display:flex;gap:var(--sp-2)">
+                    <button type="button" onclick="document.getElementById('destek-talebi-modal').close()"
+                            style="flex:1;background:transparent;border:1px solid var(--line);color:var(--text-2);font-family:var(--sans);font-size:var(--fs-body);border-radius:var(--r-md);padding:11px;cursor:pointer">Vazgeç</button>
+                    <button type="submit"
+                            style="flex:1;background:var(--crit);border:1px solid var(--crit);color:#fff;font-family:var(--sans);font-size:var(--fs-body);font-weight:600;border-radius:var(--r-md);padding:11px;cursor:pointer">Gönder</button>
+                </div>
+            </form>
+        </dialog>
         {% else %}
         <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-5);text-align:center;color:var(--text-3)">
             Şu anda atanmış bir olayın yok.

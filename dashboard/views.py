@@ -1,15 +1,17 @@
-from collections import Counter
-
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 
 from ekipler.models import Ekip
-from ekipler.services import EkipAday, en_uygun_ekibi_oner
 from hesaplar.decorators import personel_gerekli
 from ihbarlar.models import Ihbar
-from olaylar.models import OlayKumesi
+from olaylar.models import DestekTalebi, OlayKumesi
 
-from .realtime import guncelleme_yayinla, ozet_baglami
+from .realtime import (
+    destek_talepleri_baglami,
+    guncelleme_yayinla,
+    kume_ekip_onerileri,
+    ozet_baglami,
+)
 
 # Öncelik seviyesi filtresi — theme.css'teki tier renk kodlarıyla (crit/
 # high/med/low) aynı isimlendirme, skor aralıkları olaylar/models.py'deki
@@ -39,42 +41,14 @@ def ana_panel(request):
     return render(request, 'dashboard/ana_panel.html', ozet_baglami())
 
 
-def _kume_onerisi(kume):
-    """
-    Bir olay kümesi için 'Sistem Önerisi' hesaplar: kümedeki baskın olay
-    türüne ve boşta/mesafe uygunluğuna göre önerilen ekip + insan-okur
-    bir gerekçe metni. ekipler.services (adım 5) mantığını yeniden
-    kullanır — burada tekrar bir algoritma yazılmıyor.
-    """
-    ihbarlar = list(kume.ihbarlar.all())
-    if not ihbarlar:
-        return None, None
-
-    baskin_tur = Counter(i.olay_turu for i in ihbarlar).most_common(1)[0][0]
-    baskin_tur_gosterim = Ihbar.OlayTuru(baskin_tur).label
-
-    ekip_adaylari = [
-        EkipAday(id=e.id, tur=e.tur, lat=e.lat, lng=e.lng, durum=e.durum)
-        for e in Ekip.objects.all()
-    ]
-    oneri = en_uygun_ekibi_oner(baskin_tur, kume.merkez_lat, kume.merkez_lng, ekip_adaylari)
-    if oneri is None:
-        return None, f'"{baskin_tur_gosterim}" türü için şu an boşta uygun ekip yok.'
-
-    ekip = Ekip.objects.get(id=oneri.ekip_id)
-    mesafe_km = oneri.mesafe_metre / 1000
-    sebep = f'"{baskin_tur_gosterim}" türüne uygun, ~{mesafe_km:.1f} km mesafede ve boşta.'
-    return ekip, sebep
-
-
 def _yonetim_baglami(request, secili_kume):
     """Yönetim Paneli'nin sağ detay panelini render etmek için ortak bağlam (view + htmx partial'lar arasında paylaşılır)."""
-    onerilen_ekip, oneri_sebebi = (None, None)
+    onerilen_ekipler, oneri_sebebi = ([], None)
     if secili_kume is not None:
-        onerilen_ekip, oneri_sebebi = _kume_onerisi(secili_kume)
+        onerilen_ekipler, oneri_sebebi = kume_ekip_onerileri(secili_kume)
     return {
         'sel': secili_kume,
-        'onerilen_ekip': onerilen_ekip,
+        'onerilen_ekipler': onerilen_ekipler,
         'oneri_sebebi': oneri_sebebi,
         'durum_secenekleri': OlayKumesi.Durum.choices,
         'ekipler_tumu': Ekip.objects.all(),
@@ -85,8 +59,9 @@ def _yonetim_baglami(request, secili_kume):
 def yonetim_paneli(request):
     """
     Yönetim Paneli: sol tarafta filtrelenebilir/aranabilir/sıralanabilir
-    olay listesi, sağ tarafta seçili olayın detayı + sistem önerisi. Liste
-    satırına tıklamak (htmx) sadece sağ paneli günceller, sayfa yenilenmez.
+    olay listesi, sağ tarafta seçili olayın detayı + sistem önerisi, ayrıca
+    bekleyen Destek Talepleri bölümü. Liste satırına tıklamak (htmx)
+    sadece sağ paneli günceller, sayfa yenilenmez.
     """
     kumeler = OlayKumesi.objects.select_related('atanan_ekip').all()
 
@@ -136,7 +111,39 @@ def yonetim_paneli(request):
         'siralama_secenekleri': [(anahtar, etiket) for anahtar, (_, etiket) in SIRALAMA_SECENEKLERI.items()],
     }
     context.update(_yonetim_baglami(request, secili_kume))
+    context.update(destek_talepleri_baglami())
     return render(request, 'dashboard/yonetim_paneli.html', context)
+
+
+@personel_gerekli
+def destek_talebi_guncelle(request, talebi_id):
+    """
+    Bir destek talebini işler: 'yonlendir' seçilen (boşta) ekibi o olay
+    kümesine ek ekip olarak yollar (durum='yolda') ve talebi
+    'yonlendirildi' yapar; 'kapat' talebi ek ekip göndermeden kapatır.
+    Küme'nin ASIL atanan_ekip'i (ilk atama) değişmez — bu SADECE ek destek.
+    """
+    talep = get_object_or_404(DestekTalebi, id=talebi_id)
+    if request.method == 'POST':
+        eylem = request.POST.get('eylem')
+
+        if eylem == 'yonlendir':
+            ekip_id = request.POST.get('ekip_id')
+            if ekip_id:
+                ekip = get_object_or_404(Ekip, id=ekip_id)
+                ekip.durum = Ekip.Durum.YOLDA
+                ekip.mevcut_olay_kumesi = talep.olay_kumesi
+                ekip.save(update_fields=['durum', 'mevcut_olay_kumesi'])
+                talep.durum = DestekTalebi.Durum.YONLENDIRILDI
+                talep.save(update_fields=['durum'])
+                guncelleme_yayinla()
+
+        elif eylem == 'kapat':
+            talep.durum = DestekTalebi.Durum.KAPATILDI
+            talep.save(update_fields=['durum'])
+            guncelleme_yayinla()
+
+    return render(request, 'dashboard/_destek_talepleri.html', destek_talepleri_baglami())
 
 
 @personel_gerekli
@@ -169,8 +176,8 @@ def kume_ekip_ata(request, kume_id):
     Küme hâlâ 'bekliyor'/'dogrulaniyor' durumundaysa 'mudahale_ediliyor'a
     geçer — atama fiilen müdahalenin başlaması demektir.
 
-    "Öneriyi Uygula" butonu da bu endpoint'e (sistem önerisinin ekip
-    id'siyle) post eder.
+    "Öneriyi Uygula" butonu da bu endpoint'e (sistem önerisi listesindeki
+    herhangi bir ekibin id'siyle) post eder.
 
     NOT: ekip.durum='yolda' olarak başlaması, Görevim sayfasındaki
     "Yola Çıktım → Sahadayım → Tamamlandı" 3 adımlı akışın tutarlı

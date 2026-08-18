@@ -32,13 +32,21 @@ class IhbarForm(forms.ModelForm):
     # tahmini_* alanlarını burada açıkça tanımlıyoruz ki MinValueValidator
     # ve hata mesajı üzerinde tam kontrolümüz olsun (model PositiveIntegerField
     # zaten negatifi engeller, ama bunu form seviyesinde de netleştiriyoruz).
+    # initial=0: bu alanlar Vatandaş Paneli'nde GİZLİ bir input olarak
+    # +/- stepper'a bağlı (bkz. _vatandas_form.html). initial verilmezse
+    # sayfa ilk yüklendiğinde (kullanıcı hiç +/-'a basmadan) input'un
+    # gerçek değeri boş kalıyor; alan required olduğu için tarayıcının
+    # kendi HTML5 doğrulaması bunu geçersiz sayıyor, ama input gizli
+    # olduğu için odaklanıp uyarı gösteremiyor ve form SESSİZCE hiçbir
+    # şey yapmadan gönderilmiyor (gerçek bir bug'du, test sırasında
+    # yakalandı). initial=0 + aşağıdaki novalidate ile bu artık imkansız.
     tahmini_kisi_sayisi = forms.IntegerField(
-        required=True,
+        required=True, initial=0,
         validators=[MinValueValidator(0, message='Kişi sayısı negatif olamaz.')],
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
     )
     tahmini_yarali_sayisi = forms.IntegerField(
-        required=True,
+        required=True, initial=0,
         validators=[MinValueValidator(0, message='Yaralı sayısı negatif olamaz.')],
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
     )

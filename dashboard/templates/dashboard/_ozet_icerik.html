@@ -1,6 +1,13 @@
 {% load static %}
 <div style="display:flex;flex-direction:column;gap:var(--sp-5)">
 
+  {% if bekleyen_destek_talebi_sayisi %}
+  <a href="{% url 'dashboard:yonetim_paneli' %}" style="display:flex;align-items:center;gap:10px;background:var(--high-bg);border:1px solid rgba(240,138,36,.4);border-radius:var(--r-md);padding:10px 16px;color:var(--high);text-decoration:none;font-size:var(--fs-sm)">
+    <span style="font-size:16px">🚩</span>
+    <span><strong>{{ bekleyen_destek_talebi_sayisi }}</strong> bekleyen destek talebi var — Yönetim Paneli'nde incele</span>
+  </a>
+  {% endif %}
+
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-4)">
     <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;gap:10px">
       <div style="font-size:var(--fs-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)">Toplam İhbar</div>

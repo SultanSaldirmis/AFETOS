@@ -2,7 +2,7 @@ from django.shortcuts import redirect, render
 
 from dashboard.realtime import guncelleme_yayinla
 from hesaplar.decorators import personel_gerekli, saha_ekip_gerekli
-from olaylar.models import OlayKumesi
+from olaylar.models import DestekTalebi, OlayKumesi
 
 from .models import Ekip
 
@@ -117,5 +117,26 @@ def gorevim_durum_guncelle(request):
             ekip.save(update_fields=['durum', 'mevcut_olay_kumesi'])
 
             guncelleme_yayinla()  # Ana Panel/Harita'daki canlı dinleyicilere haber ver
+
+    return redirect('gorevim')
+
+
+@saha_ekip_gerekli
+def gorevim_destek_talebi_olustur(request):
+    """
+    "🚩 Destek İste" — atanmış olayın durum güncelleme akışından BAĞIMSIZ,
+    görevin her aşamasında kullanılabilir bir buton (madde 2, yeni kavram).
+    DestekTalebi oluşturur ve WebSocket ile koordinatöre anlık bildirim
+    gönderir (guncelleme_yayinla, Yönetim Paneli'ndeki Destek Talepleri
+    bölümünü canlı günceller — bkz. dashboard/realtime.py).
+    """
+    ekip = request.user.ekip
+    if request.method == 'POST' and ekip.mevcut_olay_kumesi is not None:
+        DestekTalebi.objects.create(
+            olay_kumesi=ekip.mevcut_olay_kumesi,
+            talep_eden_ekip=ekip,
+            aciklama=request.POST.get('aciklama', '').strip(),
+        )
+        guncelleme_yayinla()
 
     return redirect('gorevim')

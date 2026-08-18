@@ -14,6 +14,8 @@ from django.urls import reverse
 from ekipler.models import Ekip
 from ihbarlar.models import Ihbar
 
+from .forms import tc_kimlik_no_gecerli_mi
+
 User = get_user_model()
 
 
@@ -137,7 +139,7 @@ class KayitTestleri(TestCase):
 
     def test_kayit_vatandas_olusturur_ve_otomatik_giris_yapar(self):
         yanit = self.client.post(reverse('kayit'), {
-            'ad_soyad': 'Yeni Vatandaş', 'telefon': '05559998877',
+            'ad_soyad': 'Yeni Vatandaş', 'telefon': '05559998877', 'tc_kimlik_no': '10000000146',
             'sifre': 'guclu-sifre-123', 'sifre_tekrar': 'guclu-sifre-123',
         })
         self.assertRedirects(yanit, reverse('vatandas'))
@@ -145,6 +147,7 @@ class KayitTestleri(TestCase):
         kullanici = User.objects.get(username='05559998877')
         self.assertFalse(kullanici.is_staff)
         self.assertFalse(hasattr(kullanici, 'ekip') and kullanici.ekip is not None)
+        self.assertEqual(kullanici.vatandas_profili.tc_kimlik_no, '10000000146')
 
         # Otomatik giriş yapıldığını, oturumun kurulduğunu doğrula.
         yanit2 = self.client.get(reverse('vatandas'))
@@ -153,7 +156,7 @@ class KayitTestleri(TestCase):
     def test_ayni_telefonla_ikinci_kayit_reddedilir(self):
         User.objects.create_user(username='05551112233', password='demo1234')
         yanit = self.client.post(reverse('kayit'), {
-            'ad_soyad': 'Tekrar Deneme', 'telefon': '05551112233',
+            'ad_soyad': 'Tekrar Deneme', 'telefon': '05551112233', 'tc_kimlik_no': '10000000146',
             'sifre': 'guclu-sifre-123', 'sifre_tekrar': 'guclu-sifre-123',
         })
         self.assertEqual(yanit.status_code, 200)  # forma geri döner, kayıt olmaz
@@ -162,7 +165,7 @@ class KayitTestleri(TestCase):
 
     def test_geersiz_telefon_formati_reddedilir(self):
         yanit = self.client.post(reverse('kayit'), {
-            'ad_soyad': 'Format Testi', 'telefon': '12345',
+            'ad_soyad': 'Format Testi', 'telefon': '12345', 'tc_kimlik_no': '10000000146',
             'sifre': 'guclu-sifre-123', 'sifre_tekrar': 'guclu-sifre-123',
         })
         self.assertContains(yanit, 'Geçerli bir telefon numarası girin.')
@@ -170,7 +173,7 @@ class KayitTestleri(TestCase):
 
     def test_eslesmeyen_sifreler_reddedilir(self):
         yanit = self.client.post(reverse('kayit'), {
-            'ad_soyad': 'Şifre Testi', 'telefon': '05551239999',
+            'ad_soyad': 'Şifre Testi', 'telefon': '05551239999', 'tc_kimlik_no': '10000000146',
             'sifre': 'guclu-sifre-123', 'sifre_tekrar': 'baska-sifre-456',
         })
         self.assertContains(yanit, 'Şifreler eşleşmiyor.')
@@ -178,11 +181,62 @@ class KayitTestleri(TestCase):
 
     def test_kisa_sifre_reddedilir(self):
         yanit = self.client.post(reverse('kayit'), {
-            'ad_soyad': 'Kısa Şifre', 'telefon': '05551230000',
+            'ad_soyad': 'Kısa Şifre', 'telefon': '05551230000', 'tc_kimlik_no': '10000000146',
             'sifre': 'kisa1', 'sifre_tekrar': 'kisa1',
         })
         self.assertEqual(yanit.status_code, 200)
         self.assertFalse(User.objects.filter(username='05551230000').exists())
+
+    def test_gecersiz_tc_kimlik_no_reddedilir(self):
+        yanit = self.client.post(reverse('kayit'), {
+            'ad_soyad': 'TC Testi', 'telefon': '05551111111', 'tc_kimlik_no': '12345678901',
+            'sifre': 'guclu-sifre-123', 'sifre_tekrar': 'guclu-sifre-123',
+        })
+        self.assertContains(yanit, 'Geçerli bir TC Kimlik Numarası girin.')
+        self.assertFalse(User.objects.filter(username='05551111111').exists())
+
+    def test_ayni_tc_kimlik_no_ile_ikinci_kayit_reddedilir(self):
+        ilk = self.client.post(reverse('kayit'), {
+            'ad_soyad': 'İlk Kişi', 'telefon': '05552220001', 'tc_kimlik_no': '10000000146',
+            'sifre': 'guclu-sifre-123', 'sifre_tekrar': 'guclu-sifre-123',
+        })
+        self.assertRedirects(ilk, reverse('vatandas'))
+        self.client.logout()
+
+        ikinci = self.client.post(reverse('kayit'), {
+            'ad_soyad': 'İkinci Kişi', 'telefon': '05552220002', 'tc_kimlik_no': '10000000146',
+            'sifre': 'guclu-sifre-123', 'sifre_tekrar': 'guclu-sifre-123',
+        })
+        self.assertContains(ikinci, 'Bu TC Kimlik Numarasıyla zaten bir hesap var.')
+        self.assertFalse(User.objects.filter(username='05552220002').exists())
+
+
+class TcKimlikNoValidasyonTestleri(TestCase):
+    """
+    tc_kimlik_no_gecerli_mi — saf Python, resmi checksum algoritması.
+    '10000000146' bilinen/yaygın kullanılan geçerli-formatlı bir örnek
+    numaradır (gerçek bir kişiye ait değildir, sadece algoritmik olarak
+    geçerlidir — bkz. fonksiyonun docstring'i).
+    """
+
+    def test_gecerli_tc_kabul_edilir(self):
+        self.assertTrue(tc_kimlik_no_gecerli_mi('10000000146'))
+
+    def test_11_haneden_kisa_reddedilir(self):
+        self.assertFalse(tc_kimlik_no_gecerli_mi('123456789'))
+
+    def test_11_haneden_uzun_reddedilir(self):
+        self.assertFalse(tc_kimlik_no_gecerli_mi('123456789012'))
+
+    def test_rakam_olmayan_karakter_reddedilir(self):
+        self.assertFalse(tc_kimlik_no_gecerli_mi('1000000014a'))
+
+    def test_ilk_hane_sifir_olamaz(self):
+        self.assertFalse(tc_kimlik_no_gecerli_mi('01000000146'))
+
+    def test_yanlis_checksum_reddedilir(self):
+        # Son haneyi bozarak checksum'ı geçersiz kılıyoruz.
+        self.assertFalse(tc_kimlik_no_gecerli_mi('10000000147'))
 
 
 class LogoutTestleri(TestCase):

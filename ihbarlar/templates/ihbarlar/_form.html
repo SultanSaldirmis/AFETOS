@@ -1,6 +1,10 @@
 <div id="ihbar-form-wrapper">
+    <!-- novalidate: lat/lng GİZLİ input'lar (mini haritadan doldurulur);
+         tarayıcının kendi HTML5 doğrulaması gizli bir alanı geçersiz
+         bulduğunda ona odaklanamıyor ve formu SESSİZCE engelliyor. Sunucu
+         taraflı Django validasyonu (.hata-mesaji) tek doğruluk kaynağı. -->
     <form hx-post="{% url 'ihbarlar:olustur' %}" hx-encoding="multipart/form-data"
-          hx-target="#ihbar-form-wrapper" hx-swap="outerHTML"
+          hx-target="#ihbar-form-wrapper" hx-swap="outerHTML" novalidate
           style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-5)">
         {% csrf_token %}
 

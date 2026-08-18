@@ -25,6 +25,7 @@ urlpatterns = [
     # Rol bazlı sayfalar kasıtlı olarak app prefix'i almadan, kök seviyede:
     path('gorevim/', ekipler_views.gorevim, name='gorevim'),
     path('gorevim/durum/', ekipler_views.gorevim_durum_guncelle, name='gorevim_durum_guncelle'),
+    path('gorevim/destek-talebi/', ekipler_views.gorevim_destek_talebi_olustur, name='gorevim_destek_talebi_olustur'),
     path('vatandas/', ihbarlar_views.vatandas, name='vatandas'),
     # Üçüncü parti veri proxy'si — AFETOS'un kendi karar destek
     # mekanizmasından tamamen bağımsız, sadece harita için görsel katman:

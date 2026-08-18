@@ -74,3 +74,42 @@ class OlayKumesi(models.Model):
             'med': '#3E8BD6',
             'low': '#2F9E6E',
         }[self.oncelik_renk_kod]
+
+
+class DestekTalebi(models.Model):
+    """
+    Sahadaki bir ekibin, üzerinde çalıştığı olay için ek yardım talebi.
+    Ekip görevin herhangi bir aşamasında (durum güncelleme akışından
+    bağımsız) talep açabilir — bkz. ekipler/views.gorevim_destek_talebi_olustur.
+    Koordinatör bunu Yönetim Paneli'nde ayrı bir bölümde görür ve mevcut
+    ekip önerisi algoritmasıyla (ekipler/services.py) ek bir ekip
+    önerilir; bu model güven/öncelik skoru veya kümeleme mantığına
+    KESİNLİKLE dokunmaz.
+    """
+
+    class Durum(models.TextChoices):
+        BEKLIYOR = 'bekliyor', 'Bekliyor'
+        YONLENDIRILDI = 'yonlendirildi', 'Yönlendirildi'
+        KAPATILDI = 'kapatildi', 'Kapatıldı'
+
+    olay_kumesi = models.ForeignKey(
+        OlayKumesi, on_delete=models.CASCADE, related_name='destek_talepleri',
+        verbose_name='Olay Kümesi',
+    )
+    talep_eden_ekip = models.ForeignKey(
+        'ekipler.Ekip', on_delete=models.CASCADE, related_name='destek_talepleri',
+        verbose_name='Talep Eden Ekip',
+    )
+    aciklama = models.TextField(blank=True, verbose_name='Açıklama')
+    durum = models.CharField(
+        max_length=20, choices=Durum.choices, default=Durum.BEKLIYOR, verbose_name='Durum',
+    )
+    olusturulma_zamani = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Destek Talebi'
+        verbose_name_plural = 'Destek Talepleri'
+        ordering = ['-olusturulma_zamani']
+
+    def __str__(self):
+        return f'Destek Talebi #{self.pk} — {self.talep_eden_ekip.ad} (Küme #{self.olay_kumesi_id})'
